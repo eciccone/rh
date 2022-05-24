@@ -9,7 +9,7 @@ import (
 )
 
 type RecipeRepository interface {
-	InsertRecipe(recipe Recipe) (int, error)
+	InsertRecipe(recipe Recipe) (Recipe, error)
 	SelectRecipeById(id int) (Recipe, error)
 	SelectRecipesByUsername(username string, orderBy string, offset int, limit int) ([]Recipe, error)
 	UpdateRecipe(recipe Recipe) error
@@ -25,38 +25,72 @@ func NewRepo(db *sql.DB) RecipeRepository {
 	return &recipeRepo{db}
 }
 
-func (r *recipeRepo) InsertRecipe(recipe Recipe) (int, error) {
-	id := 0
+// Inserts a recipe into the database.
+func (r *recipeRepo) InsertRecipe(recipe Recipe) (Recipe, error) {
+	var insertedRecipe Recipe
 
 	fn := func(tx *sql.Tx) error {
 		// insert into recipe table
-		result, err := tx.Exec("INSERT INTO RECIPE(name, username) VALUES (?, ?)", recipe.Name, recipe.Username)
+		recipe, err := r.insertRecipe(tx, recipe)
 		if err != nil {
-			return fmt.Errorf("recipe.InsertRecipe() failed to insert recipe: %v", err)
-		}
-
-		// get the id of the newly inserted recipe
-		recipeId, _ := result.LastInsertId()
-		if recipeId == 0 {
-			return errors.New("recipe.InsertRecipe() no id was generated for recipe")
+			return err
 		}
 
 		// insert all the ingredients for the recipe
-		for _, ing := range recipe.Ingredients {
-			_, err := tx.Exec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)",
-				ing.Name, ing.Amount, ing.Unit, recipeId)
-			if err != nil {
-				return fmt.Errorf("recipe.InsertRecipe() failed to insert ingredient: %v", err)
-			}
+		ingredients, err := r.insertIngredients(tx, recipe.Ingredients, recipe.Id)
+		if err != nil {
+			return err
 		}
 
-		// set the id to be returned
-		id = int(recipeId)
+		// set the result
+		insertedRecipe.Id = recipe.Id
+		insertedRecipe.Name = recipe.Name
+		insertedRecipe.Username = recipe.Username
+		insertedRecipe.Ingredients = ingredients
 
 		return nil
 	}
 
-	return id, repo.Tx(r.db, fn)
+	return insertedRecipe, repo.Tx(r.db, fn)
+}
+
+// Inserts a recipe into the recipe table.
+func (r *recipeRepo) insertRecipe(tx *sql.Tx, recipe Recipe) (Recipe, error) {
+	result, err := tx.Exec("INSERT INTO RECIPE(name, username) VALUES (?, ?)", recipe.Name, recipe.Username)
+	if err != nil {
+		return Recipe{}, fmt.Errorf("recipe.InsertRecipe() failed to insert recipe: %v", err)
+	}
+
+	recipeId, _ := result.LastInsertId()
+	if recipeId == 0 {
+		return Recipe{}, errors.New("recipe.InsertRecipe() no id was generated for recipe")
+	}
+
+	recipe.Id = int(recipeId)
+
+	return recipe, nil
+}
+
+// Inserts all the ingredients into the ingredient table.
+func (r *recipeRepo) insertIngredients(tx *sql.Tx, ingredients []Ingredient, recipeId int) ([]Ingredient, error) {
+	var result []Ingredient
+
+	for _, ing := range ingredients {
+		res, err := tx.Exec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)", ing.Name, ing.Amount, ing.Unit, recipeId)
+		if err != nil {
+			return nil, fmt.Errorf("recipe.InsertRecipe() failed to insert ingredient: %v", err)
+		}
+
+		ingId, _ := res.LastInsertId()
+		if ingId == 0 {
+			return nil, errors.New("recipe.InsertRecipe() no id was generated for ingredient")
+		}
+
+		ing.Id = int(ingId)
+		result = append(result, ing)
+	}
+
+	return result, nil
 }
 
 func (r *recipeRepo) SelectRecipeById(id int) (Recipe, error) {
