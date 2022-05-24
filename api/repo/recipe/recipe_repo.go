@@ -71,12 +71,12 @@ func (r *recipeRepo) insertIngredients(tx *sql.Tx, ingredients []Ingredient, rec
 	for _, ing := range ingredients {
 		res, err := tx.Exec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)", ing.Name, ing.Amount, ing.Unit, recipeId)
 		if err != nil {
-			return nil, fmt.Errorf("recipe.InsertRecipe() failed to insert ingredient: %v", err)
+			return nil, fmt.Errorf("insertIngredients() failed to insert ingredient: %v", err)
 		}
 
 		ingId, _ := res.LastInsertId()
 		if ingId == 0 {
-			return nil, errors.New("recipe.InsertRecipe() no id was generated for ingredient")
+			return nil, errors.New("insertIngredients() no id was generated for ingredient")
 		}
 
 		ing.Id = int(ingId)
@@ -86,8 +86,44 @@ func (r *recipeRepo) insertIngredients(tx *sql.Tx, ingredients []Ingredient, rec
 	return result, nil
 }
 
+// Selects a recipe from the database
 func (r *recipeRepo) SelectRecipeById(id int) (Recipe, error) {
-	return Recipe{}, nil
+	var result Recipe
+
+	row := r.db.QueryRow("SELECT id, name, username, imagename FROM recipe WHERE id = ?", id)
+	if err := row.Scan(&result.Id, &result.Name, &result.Username, &result.ImageName); err != nil {
+		return Recipe{}, fmt.Errorf("recipe.SelectRecipeById() failed to select recipe: %v", err)
+	}
+
+	ingredients, err := r.selectIngredients(id)
+	if err != nil {
+		return Recipe{}, err
+	}
+
+	result.Ingredients = ingredients
+
+	return result, nil
+}
+
+// Selects ingredients for a recipe from the database
+func (r *recipeRepo) selectIngredients(recipeId int) ([]Ingredient, error) {
+	var result []Ingredient
+
+	rows, err := r.db.Query("SELECT id, name, amount, unit, recipeid FROM ingredient WHERE recipeid = ?", recipeId)
+	if err != nil {
+		return []Ingredient{}, fmt.Errorf("selectIngredients() failed to select ingredients: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i Ingredient
+		if err := rows.Scan(&i.Id, &i.Name, &i.Amount, &i.Unit, &i.RecipeId); err != nil {
+			return []Ingredient{}, fmt.Errorf("selectIngredients() failed to scan row: %v", err)
+		}
+		result = append(result, i)
+	}
+
+	return result, nil
 }
 
 func (r *recipeRepo) SelectRecipesByUsername(username string, orderBy string, offset int, limit int) ([]Recipe, error) {
