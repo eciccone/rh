@@ -8,10 +8,6 @@ type Recipe struct {
 	Ingredients []Ingredient `json:"ingredients,omitempty"`
 }
 
-func BuildRecipe(id int, name string, username string, imageName string, ingredients []Ingredient) Recipe {
-	return Recipe{id, name, username, imageName, ingredients}
-}
-
 type Ingredient struct {
 	Id       int    `json:"id"`
 	Name     string `json:"name"`

@@ -30,21 +30,17 @@ func (r *recipeRepo) InsertRecipe(recipe Recipe) (Recipe, error) {
 	var result Recipe
 
 	fn := func(tx *sql.Tx) error {
-		// insert into recipe table
 		recipe, err := r.insertRecipe(tx, recipe)
 		if err != nil {
 			return err
 		}
 
-		// insert all the ingredients for the recipe
 		ingredients, err := r.insertIngredients(tx, recipe.Ingredients, recipe.Id)
 		if err != nil {
 			return err
 		}
 
-		// set the result
-		result = BuildRecipe(recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients)
-
+		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients}
 		return nil
 	}
 
