@@ -27,7 +27,7 @@ func NewRepo(db *sql.DB) RecipeRepository {
 
 // Inserts a recipe into the database.
 func (r *recipeRepo) InsertRecipe(recipe Recipe) (Recipe, error) {
-	var insertedRecipe Recipe
+	var result Recipe
 
 	fn := func(tx *sql.Tx) error {
 		// insert into recipe table
@@ -43,15 +43,12 @@ func (r *recipeRepo) InsertRecipe(recipe Recipe) (Recipe, error) {
 		}
 
 		// set the result
-		insertedRecipe.Id = recipe.Id
-		insertedRecipe.Name = recipe.Name
-		insertedRecipe.Username = recipe.Username
-		insertedRecipe.Ingredients = ingredients
+		result = BuildRecipe(recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients)
 
 		return nil
 	}
 
-	return insertedRecipe, repo.Tx(r.db, fn)
+	return result, repo.Tx(r.db, fn)
 }
 
 // Inserts a recipe into the recipe table.
