@@ -11,6 +11,7 @@ import (
 
 type ProfileService interface {
 	CreateProfile(args profile.Profile) error
+	FetchProfile(id string) (profile.Profile, error)
 }
 
 type profileService struct {
@@ -19,6 +20,15 @@ type profileService struct {
 
 func NewProfileService(profileRepo profile.ProfileRepository) ProfileService {
 	return &profileService{profileRepo}
+}
+
+func (s *profileService) FetchProfile(id string) (profile.Profile, error) {
+	result, err := s.profileRepo.SelectProfileById(id)
+	if err != nil {
+		return profile.Profile{}, err
+	}
+
+	return result, nil
 }
 
 func (s *profileService) CreateProfile(args profile.Profile) error {

@@ -106,3 +106,35 @@ func Test_CreateProfileError(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func Test_FetchProfile(t *testing.T) {
+	p := profile.Profile{"test-id", "test user"}
+	rr := &ProfileRepoMocker{
+		SelectProfileByIdMock: func(id string) (profile.Profile, error) {
+			return p, nil
+		},
+	}
+
+	rs := NewProfileService(rr)
+
+	result, err := rs.FetchProfile("test-id")
+
+	assert.NoError(t, err)
+	assert.Equal(t, p, result)
+}
+
+func Test_FetchProfileError(t *testing.T) {
+	p := profile.Profile{}
+	rr := &ProfileRepoMocker{
+		SelectProfileByIdMock: func(id string) (profile.Profile, error) {
+			return profile.Profile{}, errors.New("failed")
+		},
+	}
+
+	rs := NewProfileService(rr)
+
+	result, err := rs.FetchProfile("test-id")
+
+	assert.Error(t, err)
+	assert.Equal(t, p, result)
+}
