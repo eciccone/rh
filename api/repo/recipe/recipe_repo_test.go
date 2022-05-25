@@ -8,6 +8,176 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_UpdateRecipe(t *testing.T) {
+	data := []struct {
+		Name                string
+		R                   Recipe
+		ExpectedIngredients []Ingredient
+		ExpectedSQL         func(sqlmock.Sqlmock, Recipe)
+		Pass                bool
+		Assert              func(sqlmock.Sqlmock, Recipe, Recipe, []Ingredient, error)
+	}{
+		{
+			Name: "update recipe with old and new ingredients",
+			R: Recipe{
+				Id:        1,
+				Name:      "Test Recipe",
+				Username:  "Test User",
+				ImageName: "test-img.png",
+				Ingredients: []Ingredient{
+					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+					{Id: 0, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+				},
+			},
+			ExpectedIngredients: []Ingredient{
+				{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+				{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+			},
+			ExpectedSQL: func(m sqlmock.Sqlmock, recipe Recipe) {
+				m.ExpectBegin()
+				m.ExpectExec("UPDATE recipe SET name = ?, imagename = ? WHERE id = ?").
+					WithArgs(recipe.Name, recipe.ImageName, recipe.Id).WillReturnResult(sqlmock.NewResult(0, 1))
+
+				m.ExpectExec("DELETE FROM ingredient WHERE recipeid = 1 AND id NOT IN (?)").
+					WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 0))
+
+				m.ExpectExec("UPDATE ingredient SET name = ?, amount = ?, unit = ? WHERE id = ?").
+					WithArgs(recipe.Ingredients[0].Name, recipe.Ingredients[0].Amount, recipe.Ingredients[0].Unit, recipe.Ingredients[0].Id).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+
+				m.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
+					WithArgs(recipe.Ingredients[1].Name, recipe.Ingredients[1].Amount, recipe.Ingredients[1].Unit, recipe.Ingredients[1].RecipeId).
+					WillReturnResult(sqlmock.NewResult(2, 1))
+				m.ExpectCommit()
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, expected, actual Recipe, expectedI []Ingredient, err error) {
+				assert.NoError(t, err)
+				expected.Ingredients = expectedI
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Name: "update recipe with only new ingredients",
+			R: Recipe{
+				Id:        1,
+				Name:      "Test Recipe",
+				Username:  "Test User",
+				ImageName: "test-img.png",
+				Ingredients: []Ingredient{
+					{Id: 0, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+					{Id: 0, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+				},
+			},
+			ExpectedIngredients: []Ingredient{
+				{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+				{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+			},
+			ExpectedSQL: func(m sqlmock.Sqlmock, recipe Recipe) {
+				m.ExpectBegin()
+				m.ExpectExec("UPDATE recipe SET name = ?, imagename = ? WHERE id = ?").
+					WithArgs(recipe.Name, recipe.ImageName, recipe.Id).WillReturnResult(sqlmock.NewResult(0, 1))
+
+				m.ExpectExec("DELETE FROM ingredient WHERE recipeid = ?").
+					WithArgs(recipe.Id).WillReturnResult(sqlmock.NewResult(0, 0))
+
+				m.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
+					WithArgs(recipe.Ingredients[0].Name, recipe.Ingredients[0].Amount, recipe.Ingredients[0].Unit, recipe.Ingredients[0].RecipeId).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				m.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
+					WithArgs(recipe.Ingredients[1].Name, recipe.Ingredients[1].Amount, recipe.Ingredients[1].Unit, recipe.Ingredients[1].RecipeId).
+					WillReturnResult(sqlmock.NewResult(2, 1))
+				m.ExpectCommit()
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, expected, actual Recipe, expectedI []Ingredient, err error) {
+				assert.NoError(t, err)
+				expected.Ingredients = expectedI
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Name: "update recipe with only old ingredients",
+			R: Recipe{
+				Id:        1,
+				Name:      "Test Recipe",
+				Username:  "Test User",
+				ImageName: "test-img.png",
+				Ingredients: []Ingredient{
+					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+				},
+			},
+			ExpectedIngredients: []Ingredient{
+				{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+				{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+			},
+			ExpectedSQL: func(m sqlmock.Sqlmock, recipe Recipe) {
+				m.ExpectBegin()
+				m.ExpectExec("UPDATE recipe SET name = ?, imagename = ? WHERE id = ?").
+					WithArgs(recipe.Name, recipe.ImageName, recipe.Id).WillReturnResult(sqlmock.NewResult(0, 1))
+
+				m.ExpectExec("DELETE FROM ingredient WHERE recipeid = 1 AND id NOT IN (?, ?)").
+					WithArgs(1, 2).WillReturnResult(sqlmock.NewResult(0, 0))
+
+				m.ExpectExec("UPDATE ingredient SET name = ?, amount = ?, unit = ? WHERE id = ?").
+					WithArgs(recipe.Ingredients[0].Name, recipe.Ingredients[0].Amount, recipe.Ingredients[0].Unit, recipe.Ingredients[0].Id).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+
+				m.ExpectExec("UPDATE ingredient SET name = ?, amount = ?, unit = ? WHERE id = ?").
+					WithArgs(recipe.Ingredients[1].Name, recipe.Ingredients[1].Amount, recipe.Ingredients[1].Unit, recipe.Ingredients[1].Id).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+
+				m.ExpectCommit()
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, expected, actual Recipe, expectedI []Ingredient, err error) {
+				assert.NoError(t, err)
+				expected.Ingredients = expectedI
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Name: "update recipe error",
+			R: Recipe{
+				Id:        1,
+				Name:      "Test Recipe",
+				Username:  "Test User",
+				ImageName: "test-img.png",
+				Ingredients: []Ingredient{
+					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+				},
+			},
+			ExpectedIngredients: []Ingredient{},
+			ExpectedSQL: func(m sqlmock.Sqlmock, recipe Recipe) {
+				m.ExpectBegin()
+				m.ExpectExec("UPDATE recipe SET name = ?, imagename = ? WHERE id = ?").
+					WithArgs(recipe.Name, recipe.ImageName, recipe.Id).
+					WillReturnError(errors.New("error updating recipe"))
+				m.ExpectRollback()
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, expected, actual Recipe, expectedI []Ingredient, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, Recipe{}, actual)
+			},
+		},
+	}
+
+	db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+
+	for _, d := range data {
+		t.Log("TEST: ", d.Name)
+
+		d.ExpectedSQL(mock, d.R)
+		rr := NewRepo(db)
+		result, err := rr.UpdateRecipe(d.R)
+		d.Assert(mock, d.R, result, d.ExpectedIngredients, err)
+	}
+}
+
 func Test_SelectRecipesByUsername(t *testing.T) {
 	data := []struct {
 		Name        string
