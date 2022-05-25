@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/eciccone/rh/api/repo"
 )
@@ -12,7 +13,7 @@ type RecipeRepository interface {
 	InsertRecipe(recipe Recipe) (Recipe, error)
 	SelectRecipeById(id int) (Recipe, error)
 	SelectRecipesByUsername(username string, orderBy string, offset int, limit int) ([]Recipe, error)
-	UpdateRecipe(recipe Recipe) error
+	UpdateRecipe(recipe Recipe) (Recipe, error)
 	UpdateRecipeImageName(id int, imageName string) error
 	DeleteRecipe(id int) error
 }
@@ -148,7 +149,81 @@ func (r *recipeRepo) SelectRecipesByUsername(username string, orderBy string, of
 	return result, nil
 }
 
-func (r *recipeRepo) UpdateRecipe(recipe Recipe) error {
+func (r *recipeRepo) UpdateRecipe(recipe Recipe) (Recipe, error) {
+	var result Recipe
+
+	err := repo.Tx(r.db, func(tx *sql.Tx) error {
+		_, err := tx.Exec("UPDATE recipe SET name = ?, imagename = ? WHERE id = ?", recipe.Name, recipe.ImageName, recipe.Id)
+		if err != nil {
+			return err
+		}
+
+		ingredients, err := r.updateIngredients(tx, recipe.Ingredients, recipe.Id)
+		if err != nil {
+			return fmt.Errorf("UpdateRecipe() failed to update ingredients: %v", err)
+		}
+
+		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients}
+
+		return nil
+	})
+
+	return result, err
+}
+
+func (r *recipeRepo) updateIngredients(tx *sql.Tx, ingredients []Ingredient, recipeId int) ([]Ingredient, error) {
+	var result []Ingredient
+	var existingIngredients []Ingredient
+	var existingIngredientIds []interface{}
+	var newIngredients []Ingredient
+	for _, i := range ingredients {
+		if i.Id == 0 {
+			newIngredients = append(newIngredients, i)
+		} else {
+			existingIngredients = append(existingIngredients, i)
+			existingIngredientIds = append(existingIngredientIds, i.Id)
+		}
+	}
+
+	if len(existingIngredientIds) == 0 {
+		// delete ingredients if none are being used
+		if err := r.deleteIngredients(tx, recipeId); err != nil {
+			return []Ingredient{}, fmt.Errorf("updateIngredients() failed to delete ingredients: %v", err)
+		}
+	} else {
+		// delete ingredients that are no longer needed but keep the ones that are
+		questionMarks := "?" + strings.Repeat(", ?", len(existingIngredientIds)-1)
+		sql := fmt.Sprintf("DELETE FROM ingredient WHERE recipeid = %d AND id NOT IN (%s)", recipeId, questionMarks)
+		_, err := tx.Exec(sql, existingIngredientIds...)
+		if err != nil {
+			return []Ingredient{}, fmt.Errorf("updateIngredients() error deleting unnecessary ingredients: %v", err)
+		}
+		// update the kept ingredients
+		for _, i := range existingIngredients {
+			_, err := tx.Exec("UPDATE ingredient SET name = ?, amount = ?, unit = ? WHERE id = ?", i.Name, i.Amount, i.Unit, i.Id)
+			if err != nil {
+				return []Ingredient{}, fmt.Errorf("updateIngredients() error updating ingredient: %v", err)
+			}
+			result = append(result, i)
+		}
+	}
+
+	// insert the new ingredients
+	i, err := r.insertIngredients(tx, newIngredients, recipeId)
+	if err != nil {
+		return []Ingredient{}, fmt.Errorf("updateIngredients() failed to insert ingredient: %v", err)
+	}
+	result = append(result, i...)
+
+	return result, nil
+}
+
+func (r *recipeRepo) deleteIngredients(tx *sql.Tx, recipeId int) error {
+	_, err := tx.Exec("DELETE FROM ingredient WHERE recipeid = ?", recipeId)
+	if err != nil {
+		return fmt.Errorf("deleteIngredients() failed to delete ingredient: %v", err)
+	}
+
 	return nil
 }
 
