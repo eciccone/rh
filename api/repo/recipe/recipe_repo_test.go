@@ -8,6 +8,53 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_SelectRecipeCountByUsername(t *testing.T) {
+	data := []struct {
+		Name        string
+		Username    string
+		ExpectedSQL func(sqlmock.Sqlmock, string)
+		Pass        bool
+		Assert      func(sqlmock.Sqlmock, int, error)
+	}{
+		{
+			Name:     "select recipe count",
+			Username: "Test User",
+			ExpectedSQL: func(m sqlmock.Sqlmock, username string) {
+				m.ExpectQuery("SELECT COUNT(*) FROM recipe WHERE username = ?").WithArgs(username).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(10))
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, count int, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, 10, count)
+			},
+		},
+		{
+			Name:     "select recipe count error",
+			Username: "Test User",
+			ExpectedSQL: func(m sqlmock.Sqlmock, username string) {
+				m.ExpectQuery("SELECT COUNT(*) FROM recipe WHERE username = ?").WithArgs(username).
+					WillReturnError(errors.New("failed"))
+			},
+			Pass: false,
+			Assert: func(m sqlmock.Sqlmock, count int, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, 0, count)
+			},
+		},
+	}
+
+	db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+
+	for _, d := range data {
+		t.Log("TEST: ", d.Name)
+		d.ExpectedSQL(mock, d.Username)
+		rr := NewRepo(db)
+		count, err := rr.SelectRecipeCountByUsername(d.Username)
+		d.Assert(mock, count, err)
+	}
+}
+
 func Test_DeleteRecipe(t *testing.T) {
 	data := []struct {
 		Name        string

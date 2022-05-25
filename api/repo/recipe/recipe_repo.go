@@ -13,6 +13,7 @@ type RecipeRepository interface {
 	InsertRecipe(recipe Recipe) (Recipe, error)
 	SelectRecipeById(id int) (Recipe, error)
 	SelectRecipesByUsername(username string, orderBy string, offset int, limit int) ([]Recipe, error)
+	SelectRecipeCountByUsername(username string) (int, error)
 	UpdateRecipe(recipe Recipe) (Recipe, error)
 	UpdateRecipeImageName(id int, imageName string) error
 	DeleteRecipe(id int) error
@@ -151,6 +152,23 @@ func (r *recipeRepo) SelectRecipesByUsername(username string, orderBy string, of
 	}
 
 	return result, nil
+}
+
+func (r *recipeRepo) SelectRecipeCountByUsername(username string) (int, error) {
+	rows, err := r.db.Query("SELECT COUNT(*) FROM recipe WHERE username = ?", username)
+	if err != nil {
+		return 0, fmt.Errorf("SelectRecipeCountByUsername failed to select count: %w", err)
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		if err := rows.Scan(&count); err != nil {
+			return 0, fmt.Errorf("SelectRecipeCountByUsername failed to scan row: %v", err)
+		}
+	}
+
+	return count, nil
 }
 
 // Updates a recipe in the database
