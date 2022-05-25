@@ -19,6 +19,46 @@ func NewRecipeHandler(recipeService service.RecipeService) recipeHandler {
 	return recipeHandler{recipeService}
 }
 
+func (h *recipeHandler) PutRecipe(c *gin.Context) {
+	var input recipe.Recipe
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": "invalid json data",
+		})
+		return
+	}
+	input.Username = c.GetString("username")
+	recipeId, _ := strconv.Atoi(c.Param("id"))
+	input.Id = recipeId
+
+	result, err := h.recipeService.UpdateRecipe(input)
+	if err != nil {
+		if errors.Is(err, rherr.ErrBadRequest) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"msg": "must provide a name for recipe and ingredients",
+			})
+		} else if errors.Is(err, rherr.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"msg": "recipe does not exist",
+			})
+		} else if errors.Is(err, rherr.ErrForbidden) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"msg": "forbidden",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "internal server error",
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg":    "recipe updated",
+		"recipe": result,
+	})
+}
+
 func (h *recipeHandler) PostRecipe(c *gin.Context) {
 	var input recipe.Recipe
 	if err := c.ShouldBindJSON(&input); err != nil {

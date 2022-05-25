@@ -53,6 +53,7 @@ func main() {
 	router.GET("/recipes/:id", rh.GetRecipe)
 	router.GET("/recipes", rh.GetRecipes)
 	router.POST("/recipes", rh.PostRecipe)
+	router.PUT("/recipes/:id", rh.PutRecipe)
 
 	router.Run(":8080")
 }
