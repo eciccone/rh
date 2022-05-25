@@ -9,6 +9,7 @@ import (
 	"github.com/eciccone/rh/api/handler"
 	"github.com/eciccone/rh/api/middleware"
 	"github.com/eciccone/rh/api/repo/profile"
+	"github.com/eciccone/rh/api/repo/recipe"
 	"github.com/eciccone/rh/api/service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -34,17 +35,22 @@ func main() {
 	CreateSQLiteTables(db)
 
 	pr := profile.NewRepo(db)
-	// rr := recipe.NewRepo(db)
+	rr := recipe.NewRepo(db)
 
 	ps := service.NewProfileService(pr)
+	rs := service.NewRecipeService(rr)
 
 	ph := handler.NewProfileHandler(ps)
+	rh := handler.NewRecipeHandler(rs)
 
 	router := setupRouter()
-	router.Use(middleware.Validate())
 
+	router.Use(middleware.Validate())
 	router.GET("/profile", ph.GetProfile)
 	router.POST("/profile", ph.PostProfile)
+
+	router.Use(middleware.Profile(ps))
+	router.GET("/recipes/:id", rh.GetRecipe)
 
 	router.Run(":8080")
 }
