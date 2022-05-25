@@ -3,6 +3,7 @@ package service
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/eciccone/rh/api/repo/recipe"
 	"github.com/eciccone/rh/api/rherr"
@@ -24,7 +25,7 @@ func NewRecipeService(recipeRepo recipe.RecipeRepository) RecipeService {
 func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
 	result, err := s.recipeRepo.InsertRecipe(args)
 	if err != nil {
-		return recipe.Recipe{}, rherr.ErrInternal
+		return recipe.Recipe{}, fmt.Errorf("CreateRecipe failed to create recipe: %w", err)
 	}
 
 	return result, nil
@@ -37,7 +38,7 @@ func (s *recipeService) GetRecipe(id int) (recipe.Recipe, error) {
 			return recipe.Recipe{}, rherr.ErrNotFound
 		}
 
-		return recipe.Recipe{}, rherr.ErrInternal
+		return recipe.Recipe{}, fmt.Errorf("GetRecipe failed to get recipe: %v", err)
 	}
 
 	return result, nil
