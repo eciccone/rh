@@ -8,18 +8,7 @@ import (
 	"path/filepath"
 )
 
-type ImageService interface {
-	SaveImage(file *multipart.FileHeader, path string, filename string) error
-	DeleteImage(path string, filename string) error
-}
-
-type imageService struct{}
-
-func NewImageService() ImageService {
-	return &imageService{}
-}
-
-func (s *imageService) SaveImage(file *multipart.FileHeader, path string, filename string) error {
+func SaveImage(file *multipart.FileHeader, path string, filename string) error {
 	src, err := file.Open()
 	if err != nil {
 		return fmt.Errorf("SaveImage failed to open file: %w", err)
@@ -40,7 +29,7 @@ func (s *imageService) SaveImage(file *multipart.FileHeader, path string, filena
 	return nil
 }
 
-func (s *imageService) DeleteImage(path string, filename string) error {
+func DeleteImage(path string, filename string) error {
 	file := filepath.Join(path, filename)
 	err := os.Remove(file)
 	if err != nil {
