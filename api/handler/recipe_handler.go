@@ -45,3 +45,25 @@ func (h *recipeHandler) GetRecipe(c *gin.Context) {
 		"recipe": recipe,
 	})
 }
+
+func (h *recipeHandler) GetRecipes(c *gin.Context) {
+	limit, _ := strconv.ParseInt(c.DefaultQuery("limit", "10"), 10, 64)
+	offset, _ := strconv.ParseInt(c.DefaultQuery("offset", "0"), 10, 64)
+	username := c.GetString("username")
+
+	recipePage, err := h.recipeService.GetRecipesForUsername(username, "", int(offset), int(limit))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"msg": "internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg":     "recipe found",
+		"recipes": recipePage.Recipes,
+		"limit":   recipePage.Limit,
+		"offset":  recipePage.Offset,
+		"total":   recipePage.Total,
+	})
+}

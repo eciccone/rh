@@ -51,6 +51,7 @@ func main() {
 
 	router.Use(middleware.Profile(ps))
 	router.GET("/recipes/:id", rh.GetRecipe)
+	router.GET("/recipes", rh.GetRecipes)
 
 	router.Run(":8080")
 }
