@@ -8,6 +8,51 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_DeleteRecipe(t *testing.T) {
+	data := []struct {
+		Name        string
+		Id          int
+		ExpectedSQL func(sqlmock.Sqlmock, int)
+		Pass        bool
+		Assert      func(sqlmock.Sqlmock, error)
+	}{
+		{
+			Name: "delete recipe",
+			Id:   1,
+			ExpectedSQL: func(m sqlmock.Sqlmock, id int) {
+				m.ExpectExec("DELETE FROM recipe WHERE id = ?").WithArgs(id).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			Name: "delete recipe error",
+			Id:   1,
+			ExpectedSQL: func(m sqlmock.Sqlmock, id int) {
+				m.ExpectExec("DELETE FROM recipe WHERE id = ?").WithArgs(id).
+					WillReturnError(errors.New("failed to delete recipe"))
+			},
+			Pass: false,
+			Assert: func(m sqlmock.Sqlmock, err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+
+	for _, d := range data {
+		t.Log("TEST: ", d.Name)
+		d.ExpectedSQL(mock, d.Id)
+		rr := NewRepo(db)
+		err := rr.DeleteRecipe(d.Id)
+		d.Assert(mock, err)
+	}
+}
+
 func Test_UpdateRecipeImageName(t *testing.T) {
 	data := []struct {
 		Name        string
