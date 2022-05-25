@@ -93,6 +93,10 @@ func (r *recipeRepo) SelectRecipeById(id int) (Recipe, error) {
 
 	row := r.db.QueryRow("SELECT id, name, username, imagename FROM recipe WHERE id = ?", id)
 	if err := row.Scan(&result.Id, &result.Name, &result.Username, &result.ImageName); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Recipe{}, err
+		}
+
 		return Recipe{}, fmt.Errorf("recipe.SelectRecipeById() failed to select recipe: %v", err)
 	}
 
