@@ -153,6 +153,7 @@ func (r *recipeRepo) SelectRecipesByUsername(username string, orderBy string, of
 	return result, nil
 }
 
+// Updates a recipe in the database
 func (r *recipeRepo) UpdateRecipe(recipe Recipe) (Recipe, error) {
 	var result Recipe
 
@@ -175,6 +176,7 @@ func (r *recipeRepo) UpdateRecipe(recipe Recipe) (Recipe, error) {
 	return result, err
 }
 
+// Updates the ingredients associated with a recipe
 func (r *recipeRepo) updateIngredients(tx *sql.Tx, ingredients []Ingredient, recipeId int) ([]Ingredient, error) {
 	var result []Ingredient
 	var existingIngredients []Ingredient
@@ -222,6 +224,7 @@ func (r *recipeRepo) updateIngredients(tx *sql.Tx, ingredients []Ingredient, rec
 	return result, nil
 }
 
+// Deletes all ingredients associated with a recipe
 func (r *recipeRepo) deleteIngredients(tx *sql.Tx, recipeId int) error {
 	_, err := tx.Exec("DELETE FROM ingredient WHERE recipeid = ?", recipeId)
 	if err != nil {
@@ -231,6 +234,7 @@ func (r *recipeRepo) deleteIngredients(tx *sql.Tx, recipeId int) error {
 	return nil
 }
 
+// Updates a image name for a recipe
 func (r *recipeRepo) UpdateRecipeImageName(id int, imageName string) error {
 	_, err := r.db.Exec("UPDATE recipe SET imagename = ? WHERE id = ?", imageName, id)
 	if err != nil {
@@ -241,5 +245,10 @@ func (r *recipeRepo) UpdateRecipeImageName(id int, imageName string) error {
 }
 
 func (r *recipeRepo) DeleteRecipe(id int) error {
+	_, err := r.db.Exec("DELETE FROM recipe WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("DeleteRecipe() failed to delete recipe: %v", err)
+	}
+
 	return nil
 }
