@@ -126,8 +126,26 @@ func (r *recipeRepo) selectIngredients(recipeId int) ([]Ingredient, error) {
 	return result, nil
 }
 
+// Selects a page of recipes for a user. Does not include ingredients with recipes.
 func (r *recipeRepo) SelectRecipesByUsername(username string, orderBy string, offset int, limit int) ([]Recipe, error) {
-	return []Recipe{}, nil
+	var result []Recipe
+
+	sql := "SELECT id, name, username, imagename FROM recipe WHERE username = ? ORDER BY ? LIMIT ?, ?"
+	rows, err := r.db.Query(sql, username, orderBy, offset, limit)
+	if err != nil {
+		return []Recipe{}, fmt.Errorf("SelectRecipesByUsername() failed to select recipes: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var r Recipe
+		if err := rows.Scan(&r.Id, &r.Name, &r.Username, &r.ImageName); err != nil {
+			return []Recipe{}, fmt.Errorf("SelectRecipesByUsername() failed to scan row: %v", err)
+		}
+		result = append(result, r)
+	}
+
+	return result, nil
 }
 
 func (r *recipeRepo) UpdateRecipe(recipe Recipe) error {
