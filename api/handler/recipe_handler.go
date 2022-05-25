@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/eciccone/rh/api/repo/recipe"
 	"github.com/eciccone/rh/api/rherr"
 	"github.com/eciccone/rh/api/service"
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,36 @@ type recipeHandler struct {
 
 func NewRecipeHandler(recipeService service.RecipeService) recipeHandler {
 	return recipeHandler{recipeService}
+}
+
+func (h *recipeHandler) PostRecipe(c *gin.Context) {
+	var input recipe.Recipe
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": "invalid json data",
+		})
+		return
+	}
+	input.Username = c.GetString("username")
+
+	result, err := h.recipeService.CreateRecipe(input)
+	if err != nil {
+		if errors.Is(err, rherr.ErrBadRequest) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"msg": "must provide a recipe name",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "internal server error",
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg":    "recipe created",
+		"recipe": result,
+	})
 }
 
 // /recipes/:id
