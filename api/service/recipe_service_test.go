@@ -223,3 +223,74 @@ func Test_GetRecipesForUsername(t *testing.T) {
 		tr.Assert(tr.Expected, result, err)
 	}
 }
+
+func Test_UpdateRecipe(t *testing.T) {
+	td := []struct {
+		Input    recipe.Recipe
+		Expected recipe.Recipe
+		SelectFn func(id int) (recipe.Recipe, error)
+		UpdateFn func(input recipe.Recipe) (recipe.Recipe, error)
+		Assert   func(expected recipe.Recipe, actual recipe.Recipe, err error)
+	}{
+		{
+			Input:    recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			Expected: recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"}, nil
+			},
+			UpdateFn: func(input recipe.Recipe) (recipe.Recipe, error) {
+				return input, nil
+			},
+			Assert: func(expected, actual recipe.Recipe, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Input:    recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			Expected: recipe.Recipe{},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User 1"}, nil
+			},
+			UpdateFn: func(input recipe.Recipe) (recipe.Recipe, error) {
+				return input, nil
+			},
+			Assert: func(expected, actual recipe.Recipe, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Input:    recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			Expected: recipe.Recipe{},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{}, errors.New("failed")
+			},
+			Assert: func(expected, actual recipe.Recipe, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Input:    recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			Expected: recipe.Recipe{},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"}, nil
+			},
+			UpdateFn: func(input recipe.Recipe) (recipe.Recipe, error) {
+				return recipe.Recipe{}, errors.New("failed")
+			},
+			Assert: func(expected, actual recipe.Recipe, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, expected, actual)
+			},
+		},
+	}
+
+	for _, tr := range td {
+		rr := &RecipeRepoMocker{SelectRecipeByIdMock: tr.SelectFn, UpdateRecipeMock: tr.UpdateFn}
+		rs := NewRecipeService(rr)
+		result, err := rs.UpdateRecipe(tr.Input)
+		tr.Assert(tr.Expected, result, err)
+	}
+}

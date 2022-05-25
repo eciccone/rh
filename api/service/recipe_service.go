@@ -13,6 +13,7 @@ type RecipeService interface {
 	CreateRecipe(recipe.Recipe) (recipe.Recipe, error)
 	GetRecipe(id int) (recipe.Recipe, error)
 	GetRecipesForUsername(username string, orderBy string, offset int, limit int) (UsernameRecipePage, error)
+	UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error)
 }
 
 type recipeService struct {
@@ -93,4 +94,30 @@ func (s *recipeService) GetRecipesForUsername(username string, orderBy string, o
 		Limit:   limit,
 		Total:   total,
 	}, nil
+}
+
+func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
+	if args.Name == "" || args.Username == "" {
+		return recipe.Recipe{}, rherr.ErrBadRequest
+	}
+
+	// make sure recipe exists
+	old, err := s.GetRecipe(args.Id)
+	if err != nil {
+		return old, err
+	}
+
+	if old.Username != args.Username {
+		return recipe.Recipe{}, rherr.ErrForbidden
+	}
+
+	// don't update imagename, seperate func for this
+	args.ImageName = old.ImageName
+
+	result, err := s.recipeRepo.UpdateRecipe(args)
+	if err != nil {
+		return recipe.Recipe{}, fmt.Errorf("UpdateRecipe failed to update recipe: %w", err)
+	}
+
+	return result, nil
 }
