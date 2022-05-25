@@ -228,6 +228,11 @@ func (r *recipeRepo) deleteIngredients(tx *sql.Tx, recipeId int) error {
 }
 
 func (r *recipeRepo) UpdateRecipeImageName(id int, imageName string) error {
+	_, err := r.db.Exec("UPDATE recipe SET imagename = ? WHERE id = ?", imageName, id)
+	if err != nil {
+		return fmt.Errorf("UpdateRecipeImageName() failed to update imagename: %v", err)
+	}
+
 	return nil
 }
 
