@@ -136,7 +136,10 @@ func (s *recipeService) RemoveRecipe(id int, username string) error {
 	}
 
 	if r.ImageName != "" {
-		// delete image from file system
+		err := DeleteImage("./images", r.ImageName)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = s.recipeRepo.DeleteRecipe(id)
