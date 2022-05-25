@@ -57,9 +57,13 @@ func (h *profileHandler) PostProfile(c *gin.Context) {
 
 	err := h.profileService.CreateProfile(data)
 	if err != nil {
-		if errors.Is(err, rherr.ErrBadRequest) {
+		if errors.Is(err, rherr.ErrProfileExists) {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"msg": "credentials in use",
+				"msg": "profile already created",
+			})
+		} else if errors.Is(err, rherr.ErrUsernameTaken) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"msg": "username in use",
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{

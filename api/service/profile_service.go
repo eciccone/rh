@@ -43,7 +43,7 @@ func (s *profileService) CreateProfile(args profile.Profile) error {
 			return fmt.Errorf("CreateProfile failed to get profile by id: %w", err)
 		}
 		// profile exists
-		return rherr.ErrBadRequest
+		return rherr.ErrProfileExists
 	}
 
 	// check if username is in use
@@ -53,7 +53,7 @@ func (s *profileService) CreateProfile(args profile.Profile) error {
 			return fmt.Errorf("CreateProfile failed to get profile by username: %w", err)
 		}
 		// username exists
-		return rherr.ErrBadRequest
+		return rherr.ErrUsernameTaken
 	}
 
 	if err = s.profileRepo.InsertProfile(args); err != nil {
