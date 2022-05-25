@@ -8,6 +8,70 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_SelectRecipesByUsername(t *testing.T) {
+	data := []struct {
+		Name        string
+		R           []Recipe
+		Username    string
+		ExpectedSQL func(sqlmock.Sqlmock, []Recipe, string)
+		Pass        bool
+		Assert      func(sqlmock.Sqlmock, []Recipe, []Recipe, error)
+	}{
+		{
+			Name: "select recipes by username",
+			R: []Recipe{
+				{1, "Test Name 1", "Test User", "test-img.png", nil},
+				{2, "Test Name 2", "Test User", "test-img.jpg", nil},
+				{3, "Test Name 3", "Test User", "test-img.png", nil},
+			},
+			Username: "Test User",
+			ExpectedSQL: func(m sqlmock.Sqlmock, r []Recipe, username string) {
+				recipeRow := sqlmock.NewRows([]string{"id", "name", "username", "imagename"})
+				for _, rr := range r {
+					recipeRow.AddRow(rr.Id, rr.Name, rr.Username, rr.ImageName)
+				}
+
+				m.ExpectQuery("SELECT id, name, username, imagename FROM recipe WHERE username = ? ORDER BY ? LIMIT ?, ?").
+					WithArgs(username, "id desc", 0, 10).WillReturnRows(recipeRow)
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, expected, actual []Recipe, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Name: "select recipes by username error",
+			R: []Recipe{
+				{1, "Test Name 1", "Test User", "test-img.png", nil},
+				{2, "Test Name 2", "Test User", "test-img.jpg", nil},
+				{3, "Test Name 3", "Test User", "test-img.png", nil},
+			},
+			Username: "Test User",
+			ExpectedSQL: func(m sqlmock.Sqlmock, r []Recipe, username string) {
+				m.ExpectQuery("SELECT id, name, username, imagename FROM recipe WHERE username = ? ORDER BY ? LIMIT ?, ?").
+					WithArgs(username, "id desc", 0, 10).WillReturnError(errors.New("error selecting recipes by username"))
+			},
+			Pass: false,
+			Assert: func(m sqlmock.Sqlmock, expected, actual []Recipe, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, []Recipe{}, actual)
+			},
+		},
+	}
+
+	db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+
+	for _, d := range data {
+		t.Log("TEST: ", d.Name)
+
+		d.ExpectedSQL(mock, d.R, d.Username)
+		rr := NewRepo(db)
+		result, err := rr.SelectRecipesByUsername(d.Username, "id desc", 0, 10)
+		d.Assert(mock, d.R, result, err)
+	}
+}
+
 func Test_SelectRecipeById(t *testing.T) {
 	data := []struct {
 		Name        string
