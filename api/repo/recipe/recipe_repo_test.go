@@ -8,6 +8,54 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_UpdateRecipeImageName(t *testing.T) {
+	data := []struct {
+		Name        string
+		ImageName   string
+		Id          int
+		ExpectedSQL func(sqlmock.Sqlmock, int, string)
+		Pass        bool
+		Assert      func(sqlmock.Sqlmock, error)
+	}{
+		{
+			Name:      "update recipe image name",
+			ImageName: "test-img.jpg",
+			Id:        1,
+			ExpectedSQL: func(m sqlmock.Sqlmock, id int, imageName string) {
+				m.ExpectExec("UPDATE recipe SET imagename = ? WHERE id = ?").WithArgs(imageName, id).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			Pass: true,
+			Assert: func(m sqlmock.Sqlmock, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			Name:      "update recipe image name error",
+			ImageName: "test-img.jpg",
+			Id:        1,
+			ExpectedSQL: func(m sqlmock.Sqlmock, id int, imageName string) {
+				m.ExpectExec("UPDATE recipe SET imagename = ? WHERE id = ?").WithArgs(imageName, id).
+					WillReturnError(errors.New("failed to update recipe imagename"))
+			},
+			Pass: false,
+			Assert: func(m sqlmock.Sqlmock, err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+
+	for _, d := range data {
+		t.Log("TEST: ", d.Name)
+		d.ExpectedSQL(mock, d.Id, d.ImageName)
+		rr := NewRepo(db)
+		err := rr.UpdateRecipeImageName(d.Id, d.ImageName)
+		d.Assert(mock, err)
+	}
+}
+
 func Test_UpdateRecipe(t *testing.T) {
 	data := []struct {
 		Name                string
