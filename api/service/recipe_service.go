@@ -12,6 +12,7 @@ import (
 type RecipeService interface {
 	CreateRecipe(recipe.Recipe) (recipe.Recipe, error)
 	GetRecipe(id int) (recipe.Recipe, error)
+	GetRecipesForUsername(username string, orderBy string, offset int, limit int) (UsernameRecipePage, error)
 }
 
 type recipeService struct {
@@ -46,8 +47,50 @@ func (s *recipeService) GetRecipe(id int) (recipe.Recipe, error) {
 			return recipe.Recipe{}, rherr.ErrNotFound
 		}
 
-		return recipe.Recipe{}, fmt.Errorf("GetRecipe failed to get recipe: %v", err)
+		return recipe.Recipe{}, fmt.Errorf("GetRecipe failed to get recipe: %w", err)
 	}
 
 	return result, nil
+}
+
+type UsernameRecipePage struct {
+	Recipes []recipe.Recipe `json:"recipes"`
+	Offset  int             `json:"offset"`
+	Limit   int             `json:"limit"`
+	Total   int             `json:"total"`
+}
+
+func (s *recipeService) GetRecipesForUsername(username string, orderBy string, offset int, limit int) (UsernameRecipePage, error) {
+	if username == "" {
+		return UsernameRecipePage{}, rherr.ErrBadRequest
+	}
+
+	if orderBy == "" {
+		orderBy = "id desc"
+	}
+
+	if offset < 0 {
+		offset = 0
+	}
+
+	if limit <= 0 {
+		limit = 10
+	}
+
+	recipes, err := s.recipeRepo.SelectRecipesByUsername(username, orderBy, offset, limit)
+	if err != nil {
+		return UsernameRecipePage{}, fmt.Errorf("GetRecipesForUsername failed to get recipes for username: %w", err)
+	}
+
+	total, err := s.recipeRepo.SelectRecipeCountByUsername(username)
+	if err != nil {
+		return UsernameRecipePage{}, fmt.Errorf("GetRecipesForUsername failed to get total recipe count: %w", err)
+	}
+
+	return UsernameRecipePage{
+		Recipes: recipes,
+		Offset:  offset,
+		Limit:   limit,
+		Total:   total,
+	}, nil
 }
