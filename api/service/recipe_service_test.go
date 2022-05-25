@@ -76,6 +76,14 @@ func Test_CreateRecipe(t *testing.T) {
 				assert.Equal(t, expected, actual)
 			},
 		},
+		{
+			Input:    recipe.Recipe{Name: "", Username: ""},
+			Expected: recipe.Recipe{},
+			Assert: func(expected, actual recipe.Recipe, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, expected, actual)
+			},
+		},
 	}
 
 	for _, tr := range td {
@@ -121,6 +129,14 @@ func Test_GetRecipe(t *testing.T) {
 			SelectFn: func(id int) (recipe.Recipe, error) {
 				return recipe.Recipe{}, sql.ErrNoRows
 			},
+			Assert: func(expected, actual recipe.Recipe, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, expected, actual)
+			},
+		},
+		{
+			Input:    0,
+			Expected: recipe.Recipe{},
 			Assert: func(expected, actual recipe.Recipe, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, expected, actual)

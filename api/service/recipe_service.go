@@ -23,6 +23,10 @@ func NewRecipeService(recipeRepo recipe.RecipeRepository) RecipeService {
 }
 
 func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
+	if args.Name == "" || args.Username == "" {
+		return recipe.Recipe{}, rherr.ErrBadRequest
+	}
+
 	result, err := s.recipeRepo.InsertRecipe(args)
 	if err != nil {
 		return recipe.Recipe{}, fmt.Errorf("CreateRecipe failed to create recipe: %w", err)
@@ -32,6 +36,10 @@ func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 }
 
 func (s *recipeService) GetRecipe(id int) (recipe.Recipe, error) {
+	if id <= 0 {
+		return recipe.Recipe{}, rherr.ErrBadRequest
+	}
+
 	result, err := s.recipeRepo.SelectRecipeById(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
