@@ -14,6 +14,7 @@ type RecipeService interface {
 	GetRecipe(id int) (recipe.Recipe, error)
 	GetRecipesForUsername(username string, orderBy string, offset int, limit int) (UsernameRecipePage, error)
 	UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error)
+	RemoveRecipe(id int, username string) error
 }
 
 type recipeService struct {
@@ -120,4 +121,28 @@ func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 	}
 
 	return result, nil
+}
+
+func (s *recipeService) RemoveRecipe(id int, username string) error {
+	// select recipe by id to make sure it exists
+	r, err := s.GetRecipe(id)
+	if err != nil {
+		return err
+	}
+
+	// make sure user deleting the recipe owns the recipe
+	if r.Username != username {
+		return rherr.ErrForbidden
+	}
+
+	if r.ImageName != "" {
+		// delete image from file system
+	}
+
+	err = s.recipeRepo.DeleteRecipe(id)
+	if err != nil {
+		return fmt.Errorf("RemoveRecipe failed to delete recipe: %w", err)
+	}
+
+	return nil
 }

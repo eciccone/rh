@@ -294,3 +294,72 @@ func Test_UpdateRecipe(t *testing.T) {
 		tr.Assert(tr.Expected, result, err)
 	}
 }
+
+func Test_RemoveRecipe(t *testing.T) {
+	td := []struct {
+		Id       int
+		Username string
+		Expected recipe.Recipe
+		SelectFn func(id int) (recipe.Recipe, error)
+		DeleteFn func(id int) error
+		Assert   func(err error)
+	}{
+		{
+			Id:       1,
+			Username: "Test User",
+			Expected: recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"}, nil
+			},
+			DeleteFn: func(id int) error {
+				return nil
+			},
+			Assert: func(err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			Id:       1,
+			Username: "Test User",
+			Expected: recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{}, errors.New("failed")
+			},
+			Assert: func(err error) {
+				assert.Error(t, err)
+			},
+		},
+		{
+			Id:       1,
+			Username: "Test User",
+			Expected: recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User 1"}, nil
+			},
+			Assert: func(err error) {
+				assert.Error(t, err)
+			},
+		},
+		{
+			Id:       1,
+			Username: "Test User",
+			Expected: recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User"}, nil
+			},
+			DeleteFn: func(id int) error {
+				return errors.New("failed")
+			},
+			Assert: func(err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	for _, tr := range td {
+		rr := &RecipeRepoMocker{SelectRecipeByIdMock: tr.SelectFn, DeleteRecipeMock: tr.DeleteFn}
+		rs := NewRecipeService(rr)
+		err := rs.RemoveRecipe(tr.Id, tr.Username)
+		tr.Assert(err)
+	}
+}
