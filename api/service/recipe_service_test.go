@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -27,9 +28,15 @@ func (r *mockRecipeRepo) InsertRecipe(args recipe.Recipe) (recipe.Recipe, error)
 }
 
 func (r *mockRecipeRepo) SelectRecipeById(id int) (recipe.Recipe, error) {
-	var result recipe.Recipe
+	if id == 99 {
+		return recipe.Recipe{}, sql.ErrNoRows
+	}
 
-	return result, nil
+	if id == 100 {
+		return recipe.Recipe{}, errors.New("failed to select recipe")
+	}
+
+	return recipe.Recipe{Id: id}, nil
 }
 
 func (r *mockRecipeRepo) SelectRecipesByUsername(username string, orderBy string, offset int, limit int) ([]recipe.Recipe, error) {
@@ -50,6 +57,48 @@ func (r *mockRecipeRepo) UpdateRecipeImageName(id int, imageName string) error {
 
 func (r *mockRecipeRepo) DeleteRecipe(id int) error {
 	return nil
+}
+
+func Test_GetRecipe(t *testing.T) {
+	data := []struct {
+		Id     int
+		Assert func(int, recipe.Recipe, error)
+	}{
+		{
+			Id: 1,
+			Assert: func(i int, r recipe.Recipe, e error) {
+				assert.NoError(t, e)
+				assert.Equal(t, i, r.Id)
+			},
+		},
+		{
+			Id: 0,
+			Assert: func(i int, r recipe.Recipe, e error) {
+				assert.Error(t, e)
+				assert.Zero(t, r.Id)
+			},
+		},
+		{
+			Id: 99,
+			Assert: func(i int, r recipe.Recipe, e error) {
+				assert.Error(t, e)
+				assert.Zero(t, r.Id)
+			},
+		},
+		{
+			Id: 100,
+			Assert: func(i int, r recipe.Recipe, e error) {
+				assert.Error(t, e)
+				assert.Zero(t, r.Id)
+			},
+		},
+	}
+
+	for _, d := range data {
+		rs := NewRecipeService(NewMockRecipeRepo())
+		r, err := rs.GetRecipe(d.Id)
+		d.Assert(d.Id, r, err)
+	}
 }
 
 func Test_CreateRecipe(t *testing.T) {
