@@ -20,43 +20,19 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 			return
 		}
 
-		log.Println(err)
-
-		if errors.Is(err, service.ErrProfileExists) {
+		// handle 400
+		if errors.Is(err, ErrInvalidJSON) ||
+			errors.Is(err, service.ErrProfileExists) ||
+			errors.Is(err, service.ErrProfileData) ||
+			errors.Is(err, service.ErrRecipeData) ||
+			errors.Is(err, service.ErrIngredientData) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"msg": err.Error(),
 			})
 			return
 		}
 
-		if errors.Is(err, ErrInvalidJSON) {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-
-		if errors.Is(err, service.ErrRecipeData) || errors.Is(err, service.ErrProfileData) {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-
-		if errors.Is(err, service.ErrIngredientData) {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-
-		if errors.Is(err, service.ErrNoRecipe) || errors.Is(err, service.ErrNoProfile) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-
+		// handle 403
 		if errors.Is(err, service.ErrRecipeForbidden) || errors.Is(err, service.ErrUsernameForbidden) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"msg": err.Error(),
@@ -64,6 +40,15 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 			return
 		}
 
+		// handle 404
+		if errors.Is(err, service.ErrNoRecipe) || errors.Is(err, service.ErrNoProfile) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		log.Printf("internal server error: %v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"msg": "internal server error",
 		})
