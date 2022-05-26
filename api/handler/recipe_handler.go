@@ -10,10 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	ErrInvalidJSON = errors.New("invalid json data")
-)
-
 type recipeHandler struct {
 	recipeService service.RecipeService
 }

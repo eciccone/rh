@@ -9,6 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	ErrInvalidJSON = errors.New("invalid json data")
+)
+
 func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		err := h(c)
@@ -18,6 +22,13 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 
 		log.Println(err)
 
+		if errors.Is(err, service.ErrProfileExists) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
 		if errors.Is(err, ErrInvalidJSON) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"msg": err.Error(),
@@ -25,7 +36,7 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 			return
 		}
 
-		if errors.Is(err, service.ErrRecipeData) {
+		if errors.Is(err, service.ErrRecipeData) || errors.Is(err, service.ErrProfileData) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"msg": err.Error(),
 			})
@@ -39,14 +50,14 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 			return
 		}
 
-		if errors.Is(err, service.ErrNoRecipe) {
+		if errors.Is(err, service.ErrNoRecipe) || errors.Is(err, service.ErrNoProfile) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 				"msg": err.Error(),
 			})
 			return
 		}
 
-		if errors.Is(err, service.ErrRecipeForbidden) {
+		if errors.Is(err, service.ErrRecipeForbidden) || errors.Is(err, service.ErrUsernameForbidden) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"msg": err.Error(),
 			})

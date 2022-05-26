@@ -6,7 +6,13 @@ import (
 	"fmt"
 
 	"github.com/eciccone/rh/api/repo/profile"
-	"github.com/eciccone/rh/api/rherr"
+)
+
+var (
+	ErrNoProfile         = errors.New("profile not found")
+	ErrProfileData       = errors.New("must provide username for profile")
+	ErrUsernameForbidden = errors.New("username not available")
+	ErrProfileExists     = errors.New("profile already created")
 )
 
 type ProfileService interface {
@@ -25,6 +31,10 @@ func NewProfileService(profileRepo profile.ProfileRepository) ProfileService {
 func (s *profileService) FetchProfile(id string) (profile.Profile, error) {
 	result, err := s.profileRepo.SelectProfileById(id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return profile.Profile{}, ErrNoProfile
+		}
+
 		return profile.Profile{}, err
 	}
 
@@ -32,8 +42,8 @@ func (s *profileService) FetchProfile(id string) (profile.Profile, error) {
 }
 
 func (s *profileService) CreateProfile(args profile.Profile) error {
-	if args.Id == "" || args.Username == "" {
-		return rherr.ErrBadRequest
+	if args.Username == "" {
+		return ErrProfileData
 	}
 
 	// check if profile exists
@@ -43,7 +53,7 @@ func (s *profileService) CreateProfile(args profile.Profile) error {
 			return fmt.Errorf("CreateProfile failed to get profile by id: %w", err)
 		}
 		// profile exists
-		return rherr.ErrProfileExists
+		return ErrProfileExists
 	}
 
 	// check if username is in use
@@ -53,7 +63,7 @@ func (s *profileService) CreateProfile(args profile.Profile) error {
 			return fmt.Errorf("CreateProfile failed to get profile by username: %w", err)
 		}
 		// username exists
-		return rherr.ErrUsernameTaken
+		return ErrUsernameForbidden
 	}
 
 	if err = s.profileRepo.InsertProfile(args); err != nil {

@@ -46,8 +46,8 @@ func main() {
 	router := setupRouter()
 
 	router.Use(middleware.Validate())
-	router.GET("/profile", ph.GetProfile)
-	router.POST("/profile", ph.PostProfile)
+	router.GET("/profile", handler.Handler(ph.GetProfile))
+	router.POST("/profile", handler.Handler(ph.PostProfile))
 
 	router.Use(middleware.Profile(ps))
 	router.GET("/recipes/:id", handler.Handler(rh.GetRecipe))
