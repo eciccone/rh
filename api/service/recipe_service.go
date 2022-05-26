@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/eciccone/rh/api/repo/recipe"
-	"github.com/eciccone/rh/api/rherr"
 )
 
 var (
@@ -32,9 +31,12 @@ func NewRecipeService(recipeRepo recipe.RecipeRepository) RecipeService {
 	return &recipeService{recipeRepo}
 }
 
+// Creates a new recipe.
+// If no name is set for the recipe ErrRecipeData is returned.
+// If recipe failed to be inserted, an error is returned.
 func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
-	if args.Name == "" || args.Username == "" {
-		return recipe.Recipe{}, rherr.ErrBadRequest
+	if args.Name == "" {
+		return recipe.Recipe{}, ErrRecipeData
 	}
 
 	result, err := s.recipeRepo.InsertRecipe(args)
@@ -45,15 +47,14 @@ func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 	return result, nil
 }
 
+// Gets a recipe by id.
+// If no row is returned from the database ErrNoRecipe is returned.
+// If recipe failed to be selected from database, an error is returned.
 func (s *recipeService) GetRecipe(id int) (recipe.Recipe, error) {
-	if id <= 0 {
-		return recipe.Recipe{}, rherr.ErrBadRequest
-	}
-
 	result, err := s.recipeRepo.SelectRecipeById(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return recipe.Recipe{}, rherr.ErrNotFound
+			return recipe.Recipe{}, ErrNoRecipe
 		}
 
 		return recipe.Recipe{}, fmt.Errorf("GetRecipe failed to get recipe: %w", err)
@@ -69,11 +70,10 @@ type UsernameRecipePage struct {
 	Total   int             `json:"total"`
 }
 
+// Gets a page of recipes given the username, order (defaults to id desc), offset and limit. If recipes
+// fail to be selected an error is returned. If getting the total amount of recipes for the user fails,
+// an error is returned.
 func (s *recipeService) GetRecipesForUsername(username string, orderBy string, offset int, limit int) (UsernameRecipePage, error) {
-	if username == "" {
-		return UsernameRecipePage{}, rherr.ErrBadRequest
-	}
-
 	if orderBy == "" {
 		orderBy = "id desc"
 	}
@@ -104,9 +104,15 @@ func (s *recipeService) GetRecipesForUsername(username string, orderBy string, o
 	}, nil
 }
 
+// Updates a recipe.
+// If no name is set for the recipe ErrRecipeData is returned.
+// If no row is returnedmfrom the database when selecting the recipe ErrNoRecipe is returned.
+// If recipe failed to be selected from database, an error is returned.
+// If the updated recipe does not belong to the user ErrRecipeForbidden is returned.
+// If updating recipe fails, an error is returned.
 func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
-	if args.Name == "" || args.Username == "" {
-		return recipe.Recipe{}, rherr.ErrBadRequest
+	if args.Name == "" {
+		return recipe.Recipe{}, ErrRecipeData
 	}
 
 	// make sure recipe exists
@@ -116,7 +122,7 @@ func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 	}
 
 	if old.Username != args.Username {
-		return recipe.Recipe{}, rherr.ErrForbidden
+		return recipe.Recipe{}, ErrRecipeForbidden
 	}
 
 	// don't update imagename, seperate func for this
@@ -130,6 +136,11 @@ func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 	return result, nil
 }
 
+// Removes a recipe.
+// If no row is returned from the database when selecting the recipe ErrNoRecipe is returned.
+// If recipe failed to be selected an error is returned.
+// If recipe being deleted does not belong to user ErrRecipeForbidden is returned.
+// If recipe fails to be deleted an error is returned.
 func (s *recipeService) RemoveRecipe(id int, username string) error {
 	// select recipe by id to make sure it exists
 	r, err := s.GetRecipe(id)
@@ -139,7 +150,7 @@ func (s *recipeService) RemoveRecipe(id int, username string) error {
 
 	// make sure user deleting the recipe owns the recipe
 	if r.Username != username {
-		return rherr.ErrForbidden
+		return ErrRecipeForbidden
 	}
 
 	if r.ImageName != "" {
