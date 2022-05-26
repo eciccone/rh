@@ -19,6 +19,37 @@ func NewRecipeHandler(recipeService service.RecipeService) recipeHandler {
 	return recipeHandler{recipeService}
 }
 
+func (h *recipeHandler) DeleteRecipe(c *gin.Context) {
+	username := c.GetString("username")
+	recipeId, _ := strconv.Atoi(c.Param("id"))
+
+	err := h.recipeService.RemoveRecipe(recipeId, username)
+	if err != nil {
+		if errors.Is(err, rherr.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"msg": "recipe does not exist",
+			})
+		} else if errors.Is(err, rherr.ErrBadRequest) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"msg": "invalid id",
+			})
+		} else if errors.Is(err, rherr.ErrForbidden) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"msg": "forbidden",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "internal server error",
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "recipe deleted",
+	})
+}
+
 func (h *recipeHandler) PutRecipe(c *gin.Context) {
 	var input recipe.Recipe
 	if err := c.ShouldBindJSON(&input); err != nil {
