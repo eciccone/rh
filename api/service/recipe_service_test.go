@@ -365,3 +365,54 @@ func Test_RemoveRecipe(t *testing.T) {
 		tr.Assert(err)
 	}
 }
+
+func Test_RemoveRecipeWithImage(t *testing.T) {
+	td := []struct {
+		Id          int
+		Username    string
+		SelectFn    func(id int) (recipe.Recipe, error)
+		DeleteFn    func(id int) error
+		DeleteImgFn func() error
+		Assert      func(err error)
+	}{
+		{
+			Id:       1,
+			Username: "Test User",
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User", ImageName: "test.file"}, nil
+			},
+			DeleteImgFn: func() error {
+				return nil
+			},
+			DeleteFn: func(id int) error {
+				return nil
+			},
+			Assert: func(err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			Id:       1,
+			Username: "Test User",
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User", ImageName: "test.file"}, nil
+			},
+			DeleteImgFn: func() error {
+				return errors.New("failed")
+			},
+			DeleteFn: func(id int) error {
+				return nil
+			},
+			Assert: func(err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	for _, tr := range td {
+		rr := &RecipeRepoMocker{SelectRecipeByIdMock: tr.SelectFn, DeleteRecipeMock: tr.DeleteFn}
+		rs := NewRecipeService(rr, &ImageServiceMocker{DeleteImageMock: tr.DeleteImgFn})
+		err := rs.RemoveRecipe(tr.Id, tr.Username)
+		tr.Assert(err)
+	}
+}
