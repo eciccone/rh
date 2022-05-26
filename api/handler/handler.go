@@ -18,6 +18,13 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 
 		log.Println(err)
 
+		if errors.Is(err, ErrInvalidJSON) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
 		if errors.Is(err, service.ErrRecipeData) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"msg": err.Error(),
@@ -47,7 +54,7 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 		}
 
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"msg": err.Error(),
+			"msg": "internal server error",
 		})
 	}
 }

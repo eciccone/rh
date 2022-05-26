@@ -50,11 +50,11 @@ func main() {
 	router.POST("/profile", ph.PostProfile)
 
 	router.Use(middleware.Profile(ps))
-	router.GET("/recipes/:id", rh.GetRecipe)
-	router.GET("/recipes", rh.GetRecipes)
-	router.POST("/recipes", rh.PostRecipe)
-	router.PUT("/recipes/:id", rh.PutRecipe)
-	router.DELETE("/recipes/:id", rh.DeleteRecipe)
+	router.GET("/recipes/:id", handler.Handler(rh.GetRecipe))
+	router.GET("/recipes", handler.Handler(rh.GetRecipes))
+	router.POST("/recipes", handler.Handler(rh.PostRecipe))
+	router.PUT("/recipes/:id", handler.Handler(rh.PutRecipe))
+	router.DELETE("/recipes/:id", handler.Handler(rh.DeleteRecipe))
 
 	router.Run(":8080")
 }
