@@ -9,6 +9,13 @@ import (
 	"github.com/eciccone/rh/api/rherr"
 )
 
+var (
+	ErrRecipeData      = errors.New("must provide name for recipe")
+	ErrIngredientData  = errors.New("must provide name, amount, and unit for ingredient")
+	ErrNoRecipe        = errors.New("recipe not found")
+	ErrRecipeForbidden = errors.New("recipe access not allowed")
+)
+
 type RecipeService interface {
 	CreateRecipe(recipe.Recipe) (recipe.Recipe, error)
 	GetRecipe(id int) (recipe.Recipe, error)
