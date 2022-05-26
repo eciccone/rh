@@ -416,3 +416,95 @@ func Test_RemoveRecipeWithImage(t *testing.T) {
 		tr.Assert(err)
 	}
 }
+
+func Test_UpdateRecipeImage(t *testing.T) {
+	td := []struct {
+		Id              int
+		Username        string
+		MockFile        *multipart.FileHeader
+		SelectFn        func(id int) (recipe.Recipe, error)
+		UpdateImgNameFn func(id int, imagename string) error
+		SaveImgFn       func() error
+		Assert          func(result string, err error)
+	}{
+		{
+			Id:       1,
+			Username: "Test User",
+			MockFile: &multipart.FileHeader{},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User", ImageName: "test.file"}, nil
+			},
+			SaveImgFn: func() error {
+				return nil
+			},
+			UpdateImgNameFn: func(id int, imagename string) error {
+				return nil
+			},
+			Assert: func(result string, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, "test.file", result)
+			},
+		},
+		{
+			Id:       1,
+			Username: "Test User",
+			MockFile: &multipart.FileHeader{},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User", ImageName: ""}, nil
+			},
+			SaveImgFn: func() error {
+				return nil
+			},
+			UpdateImgNameFn: func(id int, imagename string) error {
+				return nil
+			},
+			Assert: func(result string, err error) {
+				assert.NoError(t, err)
+				assert.NotEqual(t, "", result)
+			},
+		},
+		{
+			Id:       1,
+			Username: "Test User",
+			MockFile: &multipart.FileHeader{},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User", ImageName: ""}, nil
+			},
+			SaveImgFn: func() error {
+				return errors.New("failed")
+			},
+			UpdateImgNameFn: func(id int, imagename string) error {
+				return nil
+			},
+			Assert: func(result string, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "", result)
+			},
+		},
+		{
+			Id:       1,
+			Username: "Test User",
+			MockFile: &multipart.FileHeader{},
+			SelectFn: func(id int) (recipe.Recipe, error) {
+				return recipe.Recipe{Id: 1, Name: "Test Recipe", Username: "Test User", ImageName: ""}, nil
+			},
+			SaveImgFn: func() error {
+				return nil
+			},
+			UpdateImgNameFn: func(id int, imagename string) error {
+				return errors.New("failed")
+			},
+			Assert: func(result string, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "", result)
+			},
+		},
+	}
+
+	for _, tr := range td {
+		rr := &RecipeRepoMocker{SelectRecipeByIdMock: tr.SelectFn, UpdateRecipeImageNameMock: tr.UpdateImgNameFn}
+		rs := NewRecipeService(rr, &ImageServiceMocker{SaveImageMock: tr.SaveImgFn})
+		result, err := rs.UpdateRecipeImage(tr.Id, tr.Username, tr.MockFile)
+		tr.Assert(result, err)
+	}
+}

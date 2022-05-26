@@ -4,9 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"os"
+	"path/filepath"
 
 	"github.com/eciccone/rh/api/repo/recipe"
+	"github.com/google/uuid"
 )
 
 var (
@@ -33,6 +36,8 @@ type RecipeService interface {
 	// Returns ErrNoRecipe if recipe does not exist.
 	// Returns ErrRecipeForbidden if recipe does not belong to user.
 	UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error)
+
+	UpdateRecipeImage(id int, username string, file *multipart.FileHeader) (string, error)
 
 	// Removes a recipe.
 	// Returns ErrNoRecipe if recipe does not exist.
@@ -146,6 +151,41 @@ func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 	}
 
 	return result, nil
+}
+
+// Updates and stores a image for a recipe.
+// Returns ErrNoRecipe if recipe does not exist.
+// Returns ErrRecipeForbidden if recipe does not belong to user.
+func (s *recipeService) UpdateRecipeImage(id int, username string, file *multipart.FileHeader) (string, error) {
+	// select recipe by id to make sure it exists
+	r, err := s.GetRecipe(id)
+	if err != nil {
+		return "", err
+	}
+
+	// make sure user deleting the recipe owns the recipe
+	if r.Username != username {
+		return "", ErrRecipeForbidden
+	}
+
+	// if recipe is empty create a unique filename, otherwise reuse the original filename
+	if r.ImageName == "" {
+		filename := uuid.New().String()
+		extension := filepath.Ext(file.Filename)
+		r.ImageName = filename + extension
+	}
+
+	err = s.imageService.SaveImage(file, os.Getenv("IMAGE_PATH"), r.ImageName)
+	if err != nil {
+		return "", err
+	}
+
+	err = s.recipeRepo.UpdateRecipeImageName(id, r.ImageName)
+	if err != nil {
+		return "", err
+	}
+
+	return r.ImageName, nil
 }
 
 // Removes a recipe.
