@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"database/sql"
 	"errors"
 	"net/http"
 
@@ -15,7 +14,7 @@ func Profile(ps service.ProfileService) gin.HandlerFunc {
 
 		profile, err := ps.FetchProfile(profileID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+			if errors.Is(err, service.ErrNoProfile) {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 					"msg": "profile required",
 				})

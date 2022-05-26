@@ -16,10 +16,26 @@ var (
 )
 
 type RecipeService interface {
+	// Creates a new recipe.
+	// Returns ErrRecipeData if recipe name is empty.
 	CreateRecipe(recipe.Recipe) (recipe.Recipe, error)
+
+	// Gets a recipe by id.
+	// Returns ErrNoRecipe if recipe does not exist.
 	GetRecipe(id int) (recipe.Recipe, error)
+
+	// Gets a page of recipes given the username, order (defaults to id desc), offset and limit.
 	GetRecipesForUsername(username string, orderBy string, offset int, limit int) (UsernameRecipePage, error)
+
+	// Updates a recipe.
+	// Returns ErrRecipeData if recipe name is empty.
+	// Returns ErrNoRecipe if recipe does not exist.
+	// Returns ErrRecipeForbidden if recipe does not belong to user.
 	UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error)
+
+	// Removes a recipe.
+	// Returns ErrNoRecipe if recipe does not exist.
+	// Returns ErrRecipeForbidden if recipe does not belong to user.
 	RemoveRecipe(id int, username string) error
 }
 
@@ -32,8 +48,7 @@ func NewRecipeService(recipeRepo recipe.RecipeRepository) RecipeService {
 }
 
 // Creates a new recipe.
-// If no name is set for the recipe ErrRecipeData is returned.
-// If recipe failed to be inserted, an error is returned.
+// Returns ErrRecipeData if recipe name is empty.
 func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
 	if args.Name == "" {
 		return recipe.Recipe{}, ErrRecipeData
@@ -48,8 +63,7 @@ func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 }
 
 // Gets a recipe by id.
-// If no row is returned from the database ErrNoRecipe is returned.
-// If recipe failed to be selected from database, an error is returned.
+// Returns ErrNoRecipe if recipe does not exist.
 func (s *recipeService) GetRecipe(id int) (recipe.Recipe, error) {
 	result, err := s.recipeRepo.SelectRecipeById(id)
 	if err != nil {
@@ -70,9 +84,7 @@ type UsernameRecipePage struct {
 	Total   int             `json:"total"`
 }
 
-// Gets a page of recipes given the username, order (defaults to id desc), offset and limit. If recipes
-// fail to be selected an error is returned. If getting the total amount of recipes for the user fails,
-// an error is returned.
+// Gets a page of recipes given the username, order (defaults to id desc), offset and limit.
 func (s *recipeService) GetRecipesForUsername(username string, orderBy string, offset int, limit int) (UsernameRecipePage, error) {
 	if orderBy == "" {
 		orderBy = "id desc"
@@ -105,11 +117,9 @@ func (s *recipeService) GetRecipesForUsername(username string, orderBy string, o
 }
 
 // Updates a recipe.
-// If no name is set for the recipe ErrRecipeData is returned.
-// If no row is returnedmfrom the database when selecting the recipe ErrNoRecipe is returned.
-// If recipe failed to be selected from database, an error is returned.
-// If the updated recipe does not belong to the user ErrRecipeForbidden is returned.
-// If updating recipe fails, an error is returned.
+// Returns ErrRecipeData if recipe name is empty.
+// Returns ErrNoRecipe if recipe does not exist.
+// Returns ErrRecipeForbidden if recipe does not belong to user.
 func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
 	if args.Name == "" {
 		return recipe.Recipe{}, ErrRecipeData
@@ -137,10 +147,8 @@ func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 }
 
 // Removes a recipe.
-// If no row is returned from the database when selecting the recipe ErrNoRecipe is returned.
-// If recipe failed to be selected an error is returned.
-// If recipe being deleted does not belong to user ErrRecipeForbidden is returned.
-// If recipe fails to be deleted an error is returned.
+// Returns ErrNoRecipe if recipe does not exist.
+// Returns ErrRecipeForbidden if recipe does not belong to user.
 func (s *recipeService) RemoveRecipe(id int, username string) error {
 	// select recipe by id to make sure it exists
 	r, err := s.GetRecipe(id)

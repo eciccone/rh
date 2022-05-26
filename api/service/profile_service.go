@@ -16,7 +16,12 @@ var (
 )
 
 type ProfileService interface {
+	// Returns ErrProfileData if username is empty.
+	// Returns ErrProfileExists if profile already exists.
+	// Returns ErrUsernameForbidden if username is in use.
 	CreateProfile(args profile.Profile) error
+
+	// Returns ErrNoProfile if profile does not exist.
 	FetchProfile(id string) (profile.Profile, error)
 }
 
@@ -28,6 +33,7 @@ func NewProfileService(profileRepo profile.ProfileRepository) ProfileService {
 	return &profileService{profileRepo}
 }
 
+// Returns ErrNoProfile if profile does not exist.
 func (s *profileService) FetchProfile(id string) (profile.Profile, error) {
 	result, err := s.profileRepo.SelectProfileById(id)
 	if err != nil {
@@ -41,6 +47,9 @@ func (s *profileService) FetchProfile(id string) (profile.Profile, error) {
 	return result, nil
 }
 
+// Returns ErrProfileData if username is empty.
+// Returns ErrProfileExists if profile already exists.
+// Returns ErrUsernameForbidden if username is in use.
 func (s *profileService) CreateProfile(args profile.Profile) error {
 	if args.Username == "" {
 		return ErrProfileData
