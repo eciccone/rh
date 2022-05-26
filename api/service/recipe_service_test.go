@@ -3,11 +3,25 @@ package service
 import (
 	"database/sql"
 	"errors"
+	"mime/multipart"
 	"testing"
 
 	"github.com/eciccone/rh/api/repo/recipe"
 	"github.com/stretchr/testify/assert"
 )
+
+type ImageServiceMocker struct {
+	SaveImageMock   func() error
+	DeleteImageMock func() error
+}
+
+func (s *ImageServiceMocker) SaveImage(file *multipart.FileHeader, path string, filename string) error {
+	return s.SaveImageMock()
+}
+
+func (s *ImageServiceMocker) DeleteImage(path string, filename string) error {
+	return s.DeleteImageMock()
+}
 
 type RecipeRepoMocker struct {
 	InsertRecipeMock                func(recipe recipe.Recipe) (recipe.Recipe, error)
@@ -17,10 +31,6 @@ type RecipeRepoMocker struct {
 	UpdateRecipeMock                func(recipe recipe.Recipe) (recipe.Recipe, error)
 	UpdateRecipeImageNameMock       func(id int, imageName string) error
 	DeleteRecipeMock                func(id int) error
-}
-
-func NewMockRecipeRepo() recipe.RecipeRepository {
-	return &RecipeRepoMocker{}
 }
 
 func (r *RecipeRepoMocker) InsertRecipe(args recipe.Recipe) (recipe.Recipe, error) {
@@ -93,7 +103,7 @@ func Test_CreateRecipe(t *testing.T) {
 
 	for _, tr := range td {
 		rr := &RecipeRepoMocker{InsertRecipeMock: tr.InsertFn}
-		rs := NewRecipeService(rr)
+		rs := NewRecipeService(rr, &ImageServiceMocker{})
 		result, err := rs.CreateRecipe(tr.Input)
 		tr.Assert(tr.Expected, result, err)
 	}
@@ -143,7 +153,7 @@ func Test_GetRecipe(t *testing.T) {
 
 	for _, tr := range td {
 		rr := &RecipeRepoMocker{SelectRecipeByIdMock: tr.SelectFn}
-		rs := NewRecipeService(rr)
+		rs := NewRecipeService(rr, &ImageServiceMocker{})
 		result, err := rs.GetRecipe(tr.Input)
 		tr.Assert(tr.Expected, result, err)
 	}
@@ -210,7 +220,7 @@ func Test_GetRecipesForUsername(t *testing.T) {
 
 	for _, tr := range td {
 		rr := &RecipeRepoMocker{SelectRecipesByUsernameMock: tr.SelectRecipesFn, SelectRecipeCountByUsernameMock: tr.SelectCountFn}
-		rs := NewRecipeService(rr)
+		rs := NewRecipeService(rr, &ImageServiceMocker{})
 		result, err := rs.GetRecipesForUsername(tr.Username, "", tr.Expected.Offset, tr.Expected.Limit)
 		tr.Assert(tr.Expected, result, err)
 	}
@@ -281,7 +291,7 @@ func Test_UpdateRecipe(t *testing.T) {
 
 	for _, tr := range td {
 		rr := &RecipeRepoMocker{SelectRecipeByIdMock: tr.SelectFn, UpdateRecipeMock: tr.UpdateFn}
-		rs := NewRecipeService(rr)
+		rs := NewRecipeService(rr, &ImageServiceMocker{})
 		result, err := rs.UpdateRecipe(tr.Input)
 		tr.Assert(tr.Expected, result, err)
 	}
@@ -350,7 +360,7 @@ func Test_RemoveRecipe(t *testing.T) {
 
 	for _, tr := range td {
 		rr := &RecipeRepoMocker{SelectRecipeByIdMock: tr.SelectFn, DeleteRecipeMock: tr.DeleteFn}
-		rs := NewRecipeService(rr)
+		rs := NewRecipeService(rr, &ImageServiceMocker{})
 		err := rs.RemoveRecipe(tr.Id, tr.Username)
 		tr.Assert(err)
 	}

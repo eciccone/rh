@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/eciccone/rh/api/repo/recipe"
 )
@@ -40,11 +41,12 @@ type RecipeService interface {
 }
 
 type recipeService struct {
-	recipeRepo recipe.RecipeRepository
+	recipeRepo   recipe.RecipeRepository
+	imageService ImageService
 }
 
-func NewRecipeService(recipeRepo recipe.RecipeRepository) RecipeService {
-	return &recipeService{recipeRepo}
+func NewRecipeService(recipeRepo recipe.RecipeRepository, imageService ImageService) RecipeService {
+	return &recipeService{recipeRepo, imageService}
 }
 
 // Creates a new recipe.
@@ -162,10 +164,10 @@ func (s *recipeService) RemoveRecipe(id int, username string) error {
 	}
 
 	if r.ImageName != "" {
-		// err := DeleteImage("./images", r.ImageName)
-		// if err != nil {
-		// 	return err
-		// }
+		err := s.imageService.DeleteImage(os.Getenv("IMAGE_PATH"), r.ImageName)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = s.recipeRepo.DeleteRecipe(id)

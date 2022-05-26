@@ -20,7 +20,7 @@ type ImageService interface {
 	DeleteImage(path string, filename string) error
 }
 
-func NewImageService() ImageService {
+func NewFileProcessor() ImageService {
 	return &FileProcessor{
 		OpenFile: func(file *multipart.FileHeader) (multipart.File, error) {
 			return file.Open()

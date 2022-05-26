@@ -38,7 +38,8 @@ func main() {
 	rr := recipe.NewRepo(db)
 
 	ps := service.NewProfileService(pr)
-	rs := service.NewRecipeService(rr)
+	is := service.NewFileProcessor()
+	rs := service.NewRecipeService(rr, is)
 
 	ph := handler.NewProfileHandler(ps)
 	rh := handler.NewRecipeHandler(rs)
