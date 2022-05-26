@@ -47,6 +47,8 @@ func main() {
 	router := setupRouter()
 
 	router.Use(middleware.Validate())
+	router.Static("/static/images", "./static/images")
+
 	router.GET("/profile", handler.Handler(ph.GetProfile))
 	router.POST("/profile", handler.Handler(ph.PostProfile))
 
@@ -55,6 +57,7 @@ func main() {
 	router.GET("/recipes", handler.Handler(rh.GetRecipes))
 	router.POST("/recipes", handler.Handler(rh.PostRecipe))
 	router.PUT("/recipes/:id", handler.Handler(rh.PutRecipe))
+	router.PUT("/recipes/:id/image", handler.Handler(rh.PutRecipeImage))
 	router.DELETE("/recipes/:id", handler.Handler(rh.DeleteRecipe))
 
 	router.Run(":8080")

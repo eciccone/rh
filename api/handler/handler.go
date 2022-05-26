@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrInvalidJSON = errors.New("invalid json data")
+	ErrMissingFile = errors.New("requires file")
 )
 
 func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
@@ -25,7 +26,8 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 			errors.Is(err, service.ErrProfileExists) ||
 			errors.Is(err, service.ErrProfileData) ||
 			errors.Is(err, service.ErrRecipeData) ||
-			errors.Is(err, service.ErrIngredientData) {
+			errors.Is(err, service.ErrIngredientData) ||
+			errors.Is(err, ErrMissingFile) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"msg": err.Error(),
 			})

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -58,6 +59,36 @@ func (h *recipeHandler) PutRecipe(c *gin.Context) error {
 	c.JSON(http.StatusOK, gin.H{
 		"msg":    "recipe updated",
 		"recipe": result,
+	})
+
+	return nil
+}
+
+// put /recipes/:id/image
+func (h *recipeHandler) PutRecipeImage(c *gin.Context) error {
+	recipeId, _ := strconv.Atoi(c.Param("id"))
+
+	username := c.GetString("username")
+	if username == "" {
+		return errors.New("PutRecipeImage failed to get username, should have been set in middleware")
+	}
+
+	file, err := c.FormFile("image")
+	if errors.Is(err, http.ErrMissingFile) {
+		return ErrMissingFile
+	}
+	if err != nil {
+		return fmt.Errorf("PutRecipeImage failed to get file: %w", err)
+	}
+
+	imagename, err := h.recipeService.UpdateRecipeImage(recipeId, username, file)
+	if err != nil {
+		return err
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg":    "recipe image updated",
+		"recipe": imagename,
 	})
 
 	return nil
