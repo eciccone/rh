@@ -168,6 +168,7 @@ func Test_UpdateRecipe(t *testing.T) {
 					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
 					{Id: 0, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
 				},
+				Steps: []Step{},
 			},
 			ExpectedIngredients: []Ingredient{
 				{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
@@ -188,6 +189,10 @@ func Test_UpdateRecipe(t *testing.T) {
 				m.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
 					WithArgs(recipe.Ingredients[1].Name, recipe.Ingredients[1].Amount, recipe.Ingredients[1].Unit, recipe.Ingredients[1].RecipeId).
 					WillReturnResult(sqlmock.NewResult(2, 1))
+
+				m.ExpectExec("DELETE FROM step WHERE recipeid = ?").
+					WithArgs(recipe.Id).
+					WillReturnResult(sqlmock.NewResult(0, 0))
 				m.ExpectCommit()
 			},
 			Pass: true,
@@ -208,6 +213,7 @@ func Test_UpdateRecipe(t *testing.T) {
 					{Id: 0, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
 					{Id: 0, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
 				},
+				Steps: []Step{},
 			},
 			ExpectedIngredients: []Ingredient{
 				{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
@@ -228,6 +234,10 @@ func Test_UpdateRecipe(t *testing.T) {
 				m.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
 					WithArgs(recipe.Ingredients[1].Name, recipe.Ingredients[1].Amount, recipe.Ingredients[1].Unit, recipe.Ingredients[1].RecipeId).
 					WillReturnResult(sqlmock.NewResult(2, 1))
+
+				m.ExpectExec("DELETE FROM step WHERE recipeid = ?").
+					WithArgs(recipe.Id).
+					WillReturnResult(sqlmock.NewResult(0, 0))
 				m.ExpectCommit()
 			},
 			Pass: true,
@@ -248,6 +258,7 @@ func Test_UpdateRecipe(t *testing.T) {
 					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
 					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
 				},
+				Steps: []Step{},
 			},
 			ExpectedIngredients: []Ingredient{
 				{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
@@ -269,6 +280,10 @@ func Test_UpdateRecipe(t *testing.T) {
 					WithArgs(recipe.Ingredients[1].Name, recipe.Ingredients[1].Amount, recipe.Ingredients[1].Unit, recipe.Ingredients[1].Id).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 
+				m.ExpectExec("DELETE FROM step WHERE recipeid = ?").
+					WithArgs(recipe.Id).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+
 				m.ExpectCommit()
 			},
 			Pass: true,
@@ -289,6 +304,7 @@ func Test_UpdateRecipe(t *testing.T) {
 					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
 					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
 				},
+				Steps: []Step{},
 			},
 			ExpectedIngredients: []Ingredient{},
 			ExpectedSQL: func(m sqlmock.Sqlmock, recipe Recipe) {

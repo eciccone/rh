@@ -208,7 +208,12 @@ func (r *recipeRepo) UpdateRecipe(recipe Recipe) (Recipe, error) {
 			return fmt.Errorf("UpdateRecipe() failed to update ingredients: %v", err)
 		}
 
-		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients, nil}
+		steps, err := r.upsertStep(tx, recipe.Steps, recipe.Id)
+		if err != nil {
+			return fmt.Errorf("UpdateRecipe failed to update steps: %w", err)
+		}
+
+		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients, steps}
 
 		return nil
 	})
@@ -262,6 +267,47 @@ func (r *recipeRepo) updateIngredients(tx *sql.Tx, ingredients []Ingredient, rec
 	result = append(result, i...)
 
 	return result, nil
+}
+
+func (r *recipeRepo) upsertStep(tx *sql.Tx, steps []Step, recipeId int) ([]Step, error) {
+	if len(steps) == 0 {
+		_, err := tx.Exec("DELETE FROM step WHERE recipeid = ?", recipeId)
+		if err != nil {
+			return []Step{}, fmt.Errorf("upsertStep failed to delete steps: %w", err)
+		}
+		return []Step{}, nil
+	}
+
+	var stepNumbers []interface{}
+
+	for _, s := range steps {
+		stepNumbers = append(stepNumbers, s.StepNumber)
+
+		res, err := tx.Exec("UPDATE step SET description = ? WHERE stepnumber = ? AND recipeid = ?", s.Description, s.StepNumber, recipeId)
+		if err != nil {
+			return []Step{}, fmt.Errorf("upsertStep failed to update step: %w", err)
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return []Step{}, fmt.Errorf("upsertStep failed to get rows affected; %w", err)
+		}
+		if rowsAffected == 0 {
+			_, err = tx.Exec("INSERT INTO STEP(stepnumber, description, recipeid) VALUES(?, ?, ?)", s.StepNumber, s.Description, recipeId)
+			if err != nil {
+				return []Step{}, fmt.Errorf("upsertStep failed to insert step: %w", err)
+			}
+		}
+	}
+
+	questionMarks := "?" + strings.Repeat(", ?", len(stepNumbers)-1)
+	sql := fmt.Sprintf("DELETE FROM step WHERE recipeid = %d AND stepnumber NOT IN (%s)", recipeId, questionMarks)
+	_, err := tx.Exec(sql, stepNumbers...)
+	if err != nil {
+		return []Step{}, fmt.Errorf("upsertStep failed to delete old steps: %w", err)
+	}
+
+	return steps, nil
 }
 
 // Deletes all ingredients associated with a recipe

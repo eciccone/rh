@@ -149,6 +149,10 @@ func (s *recipeService) UpdateRecipe(args recipe.Recipe) (recipe.Recipe, error) 
 	// don't update imagename, seperate func for this
 	args.ImageName = old.ImageName
 
+	for i := range args.Steps {
+		args.Steps[i].StepNumber = i + 1
+	}
+
 	result, err := s.recipeRepo.UpdateRecipe(args)
 	if err != nil {
 		return recipe.Recipe{}, fmt.Errorf("UpdateRecipe failed to update recipe: %w", err)
