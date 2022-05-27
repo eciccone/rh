@@ -42,7 +42,7 @@ func (r *recipeRepo) InsertRecipe(recipe Recipe) (Recipe, error) {
 			return err
 		}
 
-		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients}
+		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients, nil}
 		return nil
 	}
 
@@ -186,7 +186,7 @@ func (r *recipeRepo) UpdateRecipe(recipe Recipe) (Recipe, error) {
 			return fmt.Errorf("UpdateRecipe() failed to update ingredients: %v", err)
 		}
 
-		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients}
+		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients, nil}
 
 		return nil
 	})

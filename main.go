@@ -106,10 +106,10 @@ const createIngredientTable = `
 
 const createStepTable = `
 	CREATE TABLE IF NOT EXISTS step (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		stepnumber INTEGER NOT NULL,
 		description TEXT NOT NULL,
 		recipeid INTEGER NOT NULL,
+		PRIMARY KEY(stepnumber, recipeid),
 		FOREIGN KEY(recipeid) REFERENCES recipe(id) ON DELETE CASCADE
 	);`
 

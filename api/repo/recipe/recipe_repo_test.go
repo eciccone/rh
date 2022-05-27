@@ -330,9 +330,9 @@ func Test_SelectRecipesByUsername(t *testing.T) {
 		{
 			Name: "select recipes by username",
 			R: []Recipe{
-				{1, "Test Name 1", "Test User", "test-img.png", nil},
-				{2, "Test Name 2", "Test User", "test-img.jpg", nil},
-				{3, "Test Name 3", "Test User", "test-img.png", nil},
+				{1, "Test Name 1", "Test User", "test-img.png", nil, nil},
+				{2, "Test Name 2", "Test User", "test-img.jpg", nil, nil},
+				{3, "Test Name 3", "Test User", "test-img.png", nil, nil},
 			},
 			Username: "Test User",
 			ExpectedSQL: func(m sqlmock.Sqlmock, r []Recipe, username string) {
@@ -353,9 +353,9 @@ func Test_SelectRecipesByUsername(t *testing.T) {
 		{
 			Name: "select recipes by username error",
 			R: []Recipe{
-				{1, "Test Name 1", "Test User", "test-img.png", nil},
-				{2, "Test Name 2", "Test User", "test-img.jpg", nil},
-				{3, "Test Name 3", "Test User", "test-img.png", nil},
+				{1, "Test Name 1", "Test User", "test-img.png", nil, nil},
+				{2, "Test Name 2", "Test User", "test-img.jpg", nil, nil},
+				{3, "Test Name 3", "Test User", "test-img.png", nil, nil},
 			},
 			Username: "Test User",
 			ExpectedSQL: func(m sqlmock.Sqlmock, r []Recipe, username string) {
