@@ -417,6 +417,7 @@ func Test_SelectRecipeById(t *testing.T) {
 					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
 					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
 				},
+				Steps: []Step{},
 			},
 			ExpectedSQL: func(mock sqlmock.Sqlmock, recipe Recipe) {
 				recipeRow := sqlmock.NewRows([]string{"id", "name", "username", "imagename"}).
@@ -431,6 +432,10 @@ func Test_SelectRecipeById(t *testing.T) {
 				mock.ExpectQuery("SELECT id, name, amount, unit, recipeid FROM ingredient WHERE recipeid = ?").
 					WithArgs(recipe.Id).
 					WillReturnRows(ingredientRows)
+
+				mock.ExpectQuery("SELECT stepnumber, description, recipeid FROM step WHERE recipeid = ?").
+					WithArgs(recipe.Id).
+					WillReturnRows(sqlmock.NewRows([]string{"stepnumber", "description", "recipeid"}))
 			},
 			Pass: true,
 			Assert: func(mock sqlmock.Sqlmock, expected, result Recipe, err error) {
@@ -443,6 +448,7 @@ func Test_SelectRecipeById(t *testing.T) {
 			R: Recipe{
 				Id:          1,
 				Ingredients: []Ingredient{},
+				Steps:       []Step{},
 			},
 			ExpectedSQL: func(mock sqlmock.Sqlmock, recipe Recipe) {
 				mock.ExpectQuery("SELECT id, name, username, imagename FROM recipe WHERE id = ?").
@@ -465,6 +471,7 @@ func Test_SelectRecipeById(t *testing.T) {
 					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
 					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
 				},
+				Steps: []Step{},
 			},
 			ExpectedSQL: func(mock sqlmock.Sqlmock, recipe Recipe) {
 				recipeRow := sqlmock.NewRows([]string{"id", "name", "username", "imagename"}).

@@ -128,7 +128,13 @@ func (r *recipeRepo) SelectRecipeById(id int) (Recipe, error) {
 		return Recipe{}, err
 	}
 
+	steps, err := r.selectSteps(id)
+	if err != nil {
+		return Recipe{}, err
+	}
+
 	result.Ingredients = ingredients
+	result.Steps = steps
 
 	return result, nil
 }
@@ -149,6 +155,26 @@ func (r *recipeRepo) selectIngredients(recipeId int) ([]Ingredient, error) {
 			return []Ingredient{}, fmt.Errorf("selectIngredients() failed to scan row: %v", err)
 		}
 		result = append(result, i)
+	}
+
+	return result, nil
+}
+
+func (r *recipeRepo) selectSteps(recipeId int) ([]Step, error) {
+	result := []Step{}
+
+	rows, err := r.db.Query("SELECT stepnumber, description, recipeid FROM step WHERE recipeid = ?", recipeId)
+	if err != nil {
+		return []Step{}, fmt.Errorf("selectSteps failed to select steps: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var s Step
+		if err := rows.Scan(&s.StepNumber, &s.Description, &s.RecipeId); err != nil {
+			return []Step{}, fmt.Errorf("selectSteps failed to scan row: %v", err)
+		}
+		result = append(result, s)
 	}
 
 	return result, nil
