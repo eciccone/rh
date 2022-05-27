@@ -17,6 +17,7 @@ var (
 	ErrIngredientData  = errors.New("must provide name, amount, and unit for ingredient")
 	ErrNoRecipe        = errors.New("recipe not found")
 	ErrRecipeForbidden = errors.New("recipe access not allowed")
+	ErrStepNumber      = errors.New("must provide a step number for every step")
 )
 
 type RecipeService interface {
@@ -59,6 +60,12 @@ func NewRecipeService(recipeRepo recipe.RecipeRepository, imageService ImageServ
 func (s *recipeService) CreateRecipe(args recipe.Recipe) (recipe.Recipe, error) {
 	if args.Name == "" {
 		return recipe.Recipe{}, ErrRecipeData
+	}
+
+	for _, s := range args.Steps {
+		if s.StepNumber == 0 {
+			return recipe.Recipe{}, ErrStepNumber
+		}
 	}
 
 	result, err := s.recipeRepo.InsertRecipe(args)
