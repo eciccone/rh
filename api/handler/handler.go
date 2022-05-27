@@ -27,7 +27,6 @@ func Handler(h func(c *gin.Context) error) gin.HandlerFunc {
 			errors.Is(err, service.ErrProfileData) ||
 			errors.Is(err, service.ErrRecipeData) ||
 			errors.Is(err, service.ErrIngredientData) ||
-			errors.Is(err, service.ErrStepNumber) ||
 			errors.Is(err, ErrMissingFile) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"msg": err.Error(),
