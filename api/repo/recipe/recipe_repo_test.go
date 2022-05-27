@@ -494,18 +494,29 @@ func Test_InsertRecipe(t *testing.T) {
 				Name:     "Test Recipe",
 				Username: "Test User",
 				Ingredients: []Ingredient{
-					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp"},
-					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups"},
+					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp", RecipeId: 1},
+					{Id: 2, Name: "Ingredient 2", Amount: "1", Unit: "cups", RecipeId: 1},
+				},
+				Steps: []Step{
+					{StepNumber: 1, Description: "test step 1", RecipeId: 1},
+					{StepNumber: 2, Description: "test step 2", RecipeId: 1},
 				},
 			},
 			ExpectedSQL: func(mock sqlmock.Sqlmock, recipe Recipe) {
 				mock.ExpectExec("INSERT INTO RECIPE(name, username) VALUES (?, ?)").
 					WithArgs(recipe.Name, recipe.Username).
 					WillReturnResult(sqlmock.NewResult(int64(recipe.Id), 1))
+
 				for _, in := range recipe.Ingredients {
 					mock.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
 						WithArgs(in.Name, in.Amount, in.Unit, recipe.Id).
 						WillReturnResult(sqlmock.NewResult(int64(in.Id), 1))
+				}
+
+				for _, s := range recipe.Steps {
+					mock.ExpectExec("INSERT INTO STEP(stepnumber, description, recipeid) VALUES(?, ?, ?)").
+						WithArgs(s.StepNumber, s.Description, recipe.Id).
+						WillReturnResult(sqlmock.NewResult(0, 1))
 				}
 			},
 			Pass: true,
@@ -583,6 +594,36 @@ func Test_InsertRecipe(t *testing.T) {
 				mock.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
 					WithArgs(recipe.Ingredients[0].Name, recipe.Ingredients[0].Amount, recipe.Ingredients[0].Unit, recipe.Id).
 					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			Pass: false,
+			Assert: func(mock sqlmock.Sqlmock, expected, result Recipe, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, Recipe{}, result)
+			},
+		},
+		{
+			Name: "insert recipe step error",
+			R: Recipe{
+				Id:       1,
+				Name:     "Test Recipe",
+				Username: "Test User",
+				Ingredients: []Ingredient{
+					{Id: 1, Name: "Ingredient 1", Amount: "1", Unit: "tbsp"},
+				},
+				Steps: []Step{
+					{StepNumber: 1, Description: "test step"},
+				},
+			},
+			ExpectedSQL: func(mock sqlmock.Sqlmock, recipe Recipe) {
+				mock.ExpectExec("INSERT INTO RECIPE(name, username) VALUES (?, ?)").
+					WithArgs(recipe.Name, recipe.Username).
+					WillReturnResult(sqlmock.NewResult(int64(recipe.Id), 1))
+				mock.ExpectExec("INSERT INTO INGREDIENT(name, amount, unit, recipeid) VALUES(?, ?, ?, ?)").
+					WithArgs(recipe.Ingredients[0].Name, recipe.Ingredients[0].Amount, recipe.Ingredients[0].Unit, recipe.Id).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("INSERT INTO STEP(stepnumber, description, recipeid) VALUES(?, ?, ?)").
+					WithArgs(recipe.Steps[0].StepNumber, recipe.Steps[0].Description, recipe.Id).
+					WillReturnError(errors.New("failed"))
 			},
 			Pass: false,
 			Assert: func(mock sqlmock.Sqlmock, expected, result Recipe, err error) {

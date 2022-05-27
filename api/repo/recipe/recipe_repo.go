@@ -42,7 +42,12 @@ func (r *recipeRepo) InsertRecipe(recipe Recipe) (Recipe, error) {
 			return err
 		}
 
-		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients, nil}
+		steps, err := r.insertSteps(tx, recipe.Steps, recipe.Id)
+		if err != nil {
+			return err
+		}
+
+		result = Recipe{recipe.Id, recipe.Name, recipe.Username, recipe.ImageName, ingredients, steps}
 		return nil
 	}
 
@@ -82,7 +87,24 @@ func (r *recipeRepo) insertIngredients(tx *sql.Tx, ingredients []Ingredient, rec
 		}
 
 		ing.Id = int(ingId)
+		ing.RecipeId = recipeId
 		result = append(result, ing)
+	}
+
+	return result, nil
+}
+
+// Inserts all the steps into the step table.
+func (r *recipeRepo) insertSteps(tx *sql.Tx, steps []Step, recipeId int) ([]Step, error) {
+	var result []Step
+
+	for _, s := range steps {
+		_, err := tx.Exec("INSERT INTO STEP(stepnumber, description, recipeid) VALUES(?, ?, ?)", s.StepNumber, s.Description, recipeId)
+		if err != nil {
+			return nil, fmt.Errorf("insertSteps failed to insert step: %v", err)
+		}
+		s.RecipeId = recipeId
+		result = append(result, s)
 	}
 
 	return result, nil
