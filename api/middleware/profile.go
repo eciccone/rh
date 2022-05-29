@@ -16,7 +16,7 @@ func Profile(ps service.ProfileService) gin.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, service.ErrNoProfile) {
 				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-					"msg": "profile required",
+					"msg": "profile not found",
 				})
 			} else {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
