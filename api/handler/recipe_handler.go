@@ -11,16 +11,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type recipeHandler struct {
+type RecipeHandler struct {
 	recipeService service.RecipeService
 }
 
-func NewRecipeHandler(recipeService service.RecipeService) recipeHandler {
-	return recipeHandler{recipeService}
+func NewRecipeHandler(recipeService service.RecipeService) RecipeHandler {
+	return RecipeHandler{recipeService}
 }
 
 // delete /recipes/:id
-func (h *recipeHandler) DeleteRecipe(c *gin.Context) error {
+func (h *RecipeHandler) DeleteRecipe(c *gin.Context) error {
 	username := c.GetString("username")
 	recipeId, _ := strconv.Atoi(c.Param("id"))
 
@@ -37,7 +37,7 @@ func (h *recipeHandler) DeleteRecipe(c *gin.Context) error {
 }
 
 // put /recipes/:id
-func (h *recipeHandler) PutRecipe(c *gin.Context) error {
+func (h *RecipeHandler) PutRecipe(c *gin.Context) error {
 	var input recipe.Recipe
 	if err := c.ShouldBindJSON(&input); err != nil {
 		return ErrInvalidJSON
@@ -65,7 +65,7 @@ func (h *recipeHandler) PutRecipe(c *gin.Context) error {
 }
 
 // put /recipes/:id/image
-func (h *recipeHandler) PutRecipeImage(c *gin.Context) error {
+func (h *RecipeHandler) PutRecipeImage(c *gin.Context) error {
 	recipeId, _ := strconv.Atoi(c.Param("id"))
 
 	username := c.GetString("username")
@@ -95,7 +95,7 @@ func (h *recipeHandler) PutRecipeImage(c *gin.Context) error {
 }
 
 // post /recipes
-func (h *recipeHandler) PostRecipe(c *gin.Context) error {
+func (h *RecipeHandler) PostRecipe(c *gin.Context) error {
 	var input recipe.Recipe
 	if err := c.ShouldBindJSON(&input); err != nil {
 		return ErrInvalidJSON
@@ -120,7 +120,7 @@ func (h *recipeHandler) PostRecipe(c *gin.Context) error {
 }
 
 // get /recipes/:id
-func (h *recipeHandler) GetRecipe(c *gin.Context) error {
+func (h *RecipeHandler) GetRecipe(c *gin.Context) error {
 	recipeId, _ := strconv.Atoi(c.Param("id"))
 
 	recipe, err := h.recipeService.GetRecipe(recipeId)
@@ -137,7 +137,7 @@ func (h *recipeHandler) GetRecipe(c *gin.Context) error {
 }
 
 // get /recipes[&limit=][&offset=]
-func (h *recipeHandler) GetRecipes(c *gin.Context) error {
+func (h *RecipeHandler) GetRecipes(c *gin.Context) error {
 	limit, _ := strconv.ParseInt(c.DefaultQuery("limit", "10"), 10, 64)
 	offset, _ := strconv.ParseInt(c.DefaultQuery("offset", "0"), 10, 64)
 

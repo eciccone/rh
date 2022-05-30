@@ -9,15 +9,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type profileHandler struct {
+type ProfileHandler struct {
 	profileService service.ProfileService
 }
 
-func NewProfileHandler(s service.ProfileService) profileHandler {
-	return profileHandler{s}
+func NewProfileHandler(s service.ProfileService) ProfileHandler {
+	return ProfileHandler{s}
 }
 
-func (h *profileHandler) GetProfile(c *gin.Context) error {
+func (h *ProfileHandler) GetProfile(c *gin.Context) error {
 	profileId := c.GetString("sub")
 	if profileId == "" {
 		return errors.New("GetProfile failed to get subject, should have been set in middleware")
@@ -36,7 +36,7 @@ func (h *profileHandler) GetProfile(c *gin.Context) error {
 	return nil
 }
 
-func (h *profileHandler) PostProfile(c *gin.Context) error {
+func (h *ProfileHandler) PostProfile(c *gin.Context) error {
 	profileId := c.GetString("sub")
 	if profileId == "" {
 		return errors.New("PostProfile failed to get subject, should have been set in middleware")
