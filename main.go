@@ -1,8 +1,6 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -11,14 +9,11 @@ import (
 	"github.com/eciccone/rh/api/repo/profile"
 	"github.com/eciccone/rh/api/repo/recipe"
 	"github.com/eciccone/rh/api/service"
+	"github.com/eciccone/rh/database"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
-)
-
-var (
-	dbfile = "recihub.db"
 )
 
 func main() {
@@ -26,13 +21,11 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	connName := fmt.Sprintf("%v?_foreign_keys=on", dbfile)
-	db, err := sql.Open("sqlite3", connName)
+	db, err := database.Open()
 	if err != nil {
-		log.Fatal("failed to connect to database: " + dbfile)
+		log.Fatalf("failed to open database: %s", err)
 	}
 	defer db.Close()
-	CreateSQLiteTables(db)
 
 	pr := profile.NewRepo(db)
 	rr := recipe.NewRepo(db)
@@ -77,56 +70,4 @@ func setupRouter() *gin.Engine {
 	r.Use(cors.New(config))
 
 	return r
-}
-
-const createProfileTable = `
-	CREATE TABLE IF NOT EXISTS profile (
-  	id TEXT NOT NULL PRIMARY KEY,
-  	username TEXT NOT NULL UNIQUE
-  );`
-
-const createRecipeTable = `
-	CREATE TABLE IF NOT EXISTS recipe (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		username TEXT NOT NULL,
-		imagename TEXT default "",
-		CHECK (name <> '' AND username <> '')
-	);`
-
-const createIngredientTable = `
-	CREATE TABLE IF NOT EXISTS ingredient (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		amount TEXT NOT NULL,
-		unit TEXT NOT NULL,
-		recipeid INTEGER NOT NULL,
-		FOREIGN KEY(recipeid) REFERENCES recipe(id) ON DELETE CASCADE
-	);`
-
-const createStepTable = `
-	CREATE TABLE IF NOT EXISTS step (
-		stepnumber INTEGER NOT NULL,
-		description TEXT NOT NULL,
-		recipeid INTEGER NOT NULL,
-		PRIMARY KEY(stepnumber, recipeid),
-		FOREIGN KEY(recipeid) REFERENCES recipe(id) ON DELETE CASCADE
-	);`
-
-func CreateSQLiteTables(conn *sql.DB) {
-	if _, err := conn.Exec(createProfileTable); err != nil {
-		log.Fatal("failed to create PROFILE table")
-	}
-
-	if _, err := conn.Exec(createRecipeTable); err != nil {
-		log.Fatal("failed to create RECIPE table")
-	}
-
-	if _, err := conn.Exec(createIngredientTable); err != nil {
-		log.Fatal("failed to create INGREDIENT table")
-	}
-
-	if _, err := conn.Exec(createStepTable); err != nil {
-		log.Fatal("failed to create STEP table")
-	}
 }
