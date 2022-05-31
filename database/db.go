@@ -22,7 +22,8 @@ const createRecipeTable = `
 		name TEXT NOT NULL,
 		username TEXT NOT NULL,
 		imagename TEXT default "",
-		CHECK (name <> '' AND username <> '')
+		CHECK (name <> '' AND username <> ''),
+		FOREIGN KEY(username) REFERENCES profile(username) ON DELETE CASCADE
 	);`
 
 const createIngredientTable = `
