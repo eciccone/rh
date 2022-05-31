@@ -31,6 +31,7 @@ func (r *Router) setConfiguration() {
 	config := cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowHeaders:     []string{"Access-Control-Allow-Origin", "*"},
+		AllowMethods:     []string{"Access-Control-Allow-Methods", "*"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
