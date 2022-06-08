@@ -55,11 +55,11 @@ func (r *Router) BuildRoutes(db *sql.DB) {
 	ph := handler.NewProfileHandler(ps)
 	rh := handler.NewRecipeHandler(rs)
 
-	// all end points below must have a valid access token
-	r.Engine.Use(middleware.Validate())
-
 	// location for recipe image uploads
 	r.Engine.Static("/static/images", "./static/images")
+
+	// all end points below must have a valid access token
+	r.Engine.Use(middleware.Validate())
 
 	// profile routes
 	r.Engine.GET("/profile", handler.Handler(ph.GetProfile))
